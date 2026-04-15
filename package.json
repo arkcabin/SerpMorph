@@ -14,6 +14,7 @@
     "release:dry": "semantic-release --dry-run"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@tanstack/react-query": "^5.99.0",
     "@tanstack/react-query-devtools": "^5.99.0",
@@ -23,6 +24,7 @@
     "lucide-react": "^1.8.0",
     "next": "16.1.7",
     "next-themes": "^0.4.6",
+    "pg": "^8.20.0",
     "prisma": "^7.7.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
