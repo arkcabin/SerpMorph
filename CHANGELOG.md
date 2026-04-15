@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/arkcabin/SerpMorph/compare/v1.0.0...v1.0.1) (2026-04-15)
+
+### Bug Fixes
+
+* update release message format in .releaserc.json ([32df351](https://github.com/arkcabin/SerpMorph/commit/32df351138f8685b9b3c3e3563e1ea7daa26d864))
+
 ## 1.0.0 (2026-04-15)
 
 ### Features
