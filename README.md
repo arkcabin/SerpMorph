@@ -95,6 +95,43 @@ npm run dev
 
 Open http://localhost:3000
 
+## Automated Versioning
+
+SerpMorph now uses commit-based automated versioning on merge/push to main.
+
+- GitHub Action: [.github/workflows/release.yml](.github/workflows/release.yml)
+- Release config: [.releaserc.json](.releaserc.json)
+- Output: version tag, updated package version, CHANGELOG.md, GitHub release
+
+Version bump rules follow Conventional Commits:
+
+- feat: -> minor version bump
+- fix: -> patch version bump
+- feat!: or BREAKING CHANGE: -> major version bump
+- docs: -> patch version bump
+
+No release is generated for:
+
+- chore:
+- style:
+- test:
+
+### Commit Examples
+
+```bash
+feat(auth): add google oauth callback handling
+fix(dashboard): handle empty search console response
+feat(api)!: change domain metrics response format
+```
+
+### Local Dry Run
+
+You can preview the next version without publishing:
+
+```bash
+npm run release:dry
+```
+
 ## Roadmap
 
 - [ ] Define production-ready Prisma schema
