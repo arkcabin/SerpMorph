@@ -1,196 +1,80 @@
-"use client"
+"use client";
 
-import * as React from "react"
-
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { LogoIcon } from "@/components/logo";
+import { Button } from "@/components/ui/button";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { NavGroup } from "@/components/nav-group";
+import { footerNavLinks, navGroups } from "@/components/app-shared";
+import { LatestChange } from "@/components/latest-change";
+import { PlusIcon, SearchIcon } from "lucide-react";
 
-const data = {
-  teams: [
-    {
-      name: "SerpMorph",
-      logo: (
-        <GalleryVerticalEndIcon
-        />
-      ),
-      plan: "Growth",
-    },
-    {
-      name: "Search Team",
-      logo: (
-        <AudioLinesIcon
-        />
-      ),
-      plan: "Pro",
-    },
-    {
-      name: "Client Workspace",
-      logo: (
-        <TerminalIcon
-        />
-      ),
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Overview",
-      url: "/dashboard",
-      icon: (
-        <TerminalSquareIcon
-        />
-      ),
-      isActive: true,
-      items: [
-        {
-          title: "Performance",
-          url: "/dashboard",
-        },
-        {
-          title: "Queries",
-          url: "/dashboard",
-        },
-        {
-          title: "Pages",
-          url: "/dashboard",
-        },
-      ],
-    },
-    {
-      title: "AI Insights",
-      url: "/dashboard",
-      icon: (
-        <BotIcon
-        />
-      ),
-      items: [
-        {
-          title: "Summary",
-          url: "/dashboard",
-        },
-        {
-          title: "Suggestions",
-          url: "/dashboard",
-        },
-        {
-          title: "Tracking",
-          url: "/dashboard",
-        },
-      ],
-    },
-    {
-      title: "Resources",
-      url: "/dashboard",
-      icon: (
-        <BookOpenIcon
-        />
-      ),
-      items: [
-        {
-          title: "Introduction",
-          url: "/dashboard",
-        },
-        {
-          title: "Get Started",
-          url: "/dashboard",
-        },
-        {
-          title: "SEO Guide",
-          url: "/dashboard",
-        },
-        {
-          title: "Changelog",
-          url: "/dashboard",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "/dashboard",
-      icon: (
-        <Settings2Icon
-        />
-      ),
-      items: [
-        {
-          title: "General",
-          url: "/dashboard",
-        },
-        {
-          title: "Integrations",
-          url: "/dashboard",
-        },
-        {
-          title: "Billing",
-          url: "/dashboard",
-        },
-        {
-          title: "Usage",
-          url: "/dashboard",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "SEO Analyzer",
-      url: "/dashboard",
-      icon: (
-        <FrameIcon
-        />
-      ),
-    },
-    {
-      name: "GSC Sync",
-      url: "/dashboard",
-      icon: (
-        <PieChartIcon
-        />
-      ),
-    },
-    {
-      name: "Rank Tracker",
-      url: "/dashboard",
-      icon: (
-        <MapIcon
-        />
-      ),
-    },
-  ],
-}
-
-type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}
-
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  )
+export function AppSidebar() {
+	return (
+		<Sidebar collapsible="icon" variant="floating">
+			<SidebarHeader className="h-14 justify-center">
+				<SidebarMenuButton asChild>
+					<a href="/dashboard">
+						<LogoIcon />
+						<span className="font-medium">SerpMorph</span>
+					</a>
+				</SidebarMenuButton>
+			</SidebarHeader>
+			<SidebarContent>
+				<SidebarGroup>
+					<SidebarMenuItem className="flex items-center gap-2">
+						<SidebarMenuButton
+							className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+							tooltip="Run SEO audit"
+						>
+							<PlusIcon
+							/>
+							<span>New audit</span>
+						</SidebarMenuButton>
+						<Button
+							aria-label="Search dashboard"
+							className="size-8 group-data-[collapsible=icon]:opacity-0"
+							size="icon"
+							variant="outline"
+						>
+							<SearchIcon
+							/>
+							<span className="sr-only">Search dashboard</span>
+						</Button>
+					</SidebarMenuItem>
+				</SidebarGroup>
+				{navGroups.map((group, index) => (
+					<NavGroup key={`sidebar-group-${index}`} {...group} />
+				))}
+			</SidebarContent>
+			<SidebarFooter>
+				<LatestChange />
+				<SidebarMenu className="mt-2">
+					{footerNavLinks.map((item) => (
+						<SidebarMenuItem key={item.title}>
+							<SidebarMenuButton
+								asChild
+								className="text-muted-foreground"
+								isActive={item.isActive}
+								size="sm"
+							>
+								<a href={item.path}>
+									{item.icon}
+									<span>{item.title}</span>
+								</a>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					))}
+				</SidebarMenu>
+			</SidebarFooter>
+		</Sidebar>
+	);
 }

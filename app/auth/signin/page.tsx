@@ -21,7 +21,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background px-4 py-12">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,oklch(0.96_0.02_210)_0%,transparent_30%),radial-gradient(circle_at_90%_90%,oklch(0.94_0.02_150)_0%,transparent_30%)]" />
+      <div className="ambient-layer ambient-signin" />
       <Card className="z-10 w-full max-w-md border-border/80 bg-card/95 backdrop-blur">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl">Welcome back</CardTitle>

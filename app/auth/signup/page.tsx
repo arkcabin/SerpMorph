@@ -14,7 +14,7 @@ export default async function SignUpPage() {
 
   return (
     <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background px-4 py-12">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_85%,oklch(0.95_0.02_250)_0%,transparent_32%),radial-gradient(circle_at_80%_20%,oklch(0.94_0.025_120)_0%,transparent_35%)]" />
+      <div className="ambient-layer ambient-signup" />
       <Card className="z-10 w-full max-w-md border-border/80 bg-card/95 backdrop-blur">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl">Create your account</CardTitle>
