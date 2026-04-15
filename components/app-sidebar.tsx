@@ -32,7 +32,7 @@ export function AppSidebar() {
 				<SidebarGroup>
 					<SidebarMenuItem className="flex items-center gap-2">
 						<SidebarMenuButton
-							className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+							className="min-w-8 bg-brand-primary text-brand-primary-foreground duration-200 ease-linear hover:bg-brand-primary/90 hover:text-brand-primary-foreground active:bg-brand-primary/90 active:text-brand-primary-foreground"
 							tooltip="Run SEO audit"
 						>
 							<PlusIcon
@@ -41,7 +41,7 @@ export function AppSidebar() {
 						</SidebarMenuButton>
 						<Button
 							aria-label="Search dashboard"
-							className="size-8 group-data-[collapsible=icon]:opacity-0"
+							className="size-8 group-data-[collapsible=icon]:opacity-0 border-sidebar-border"
 							size="icon"
 							variant="outline"
 						>

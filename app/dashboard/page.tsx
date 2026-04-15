@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       }}
     >
       <div className="flex flex-1 flex-col gap-4 md:gap-5">
-          <Card className="border-border/80">
+          <Card className="border-border">
             <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-2xl">Welcome back, {userName}</CardTitle>
@@ -39,11 +39,11 @@ export default async function DashboardPage() {
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" className="gap-1.5">
+                <Button size="sm" className="gap-1.5 shadow-sm">
                   <GlobeIcon className="size-4" />
                   Connect GSC
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1.5">
+                <Button size="sm" variant="outline" className="gap-1.5 shadow-sm">
                   <SearchIcon className="size-4" />
                   Analyze URL
                 </Button>
@@ -55,11 +55,11 @@ export default async function DashboardPage() {
             {metrics.map((metric) => (
               <Card key={metric.label}>
                 <CardHeader className="space-y-1">
-                  <CardDescription>{metric.label}</CardDescription>
+                  <CardDescription className="text-muted-foreground/80">{metric.label}</CardDescription>
                   <CardTitle className="text-2xl">{metric.value}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xs text-muted-foreground">{metric.helper}</p>
+                  <p className="text-xs text-muted-foreground/60">{metric.helper}</p>
                 </CardContent>
               </Card>
             ))}
@@ -72,11 +72,11 @@ export default async function DashboardPage() {
                 <CardDescription>Clicks and impressions will appear here after your first sync.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="relative h-56 overflow-hidden rounded-lg border bg-muted/25">
-                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-foreground/10 to-transparent" />
+                <div className="relative h-56 overflow-hidden rounded-lg border bg-muted/5">
+                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-primary/5 to-transparent" />
                   <div className="absolute inset-0 grid grid-cols-6 items-end gap-2 p-4">
                     {[22, 44, 38, 61, 49, 74].map((value, index) => (
-                      <div key={index} className="rounded-sm bg-foreground/80" style={{ height: `${value}%` }} />
+                      <div key={index} className="rounded-sm bg-primary/20" style={{ height: `${value}%` }} />
                     ))}
                   </div>
                 </div>
