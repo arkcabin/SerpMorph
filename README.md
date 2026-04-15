@@ -132,6 +132,10 @@ You can preview the next version without publishing:
 npm run release:dry
 ```
 
+Detailed reference:
+
+- [Release and Versioning Guide](docs/release-versioning-guide.md)
+
 ## Roadmap
 
 - [ ] Define production-ready Prisma schema
