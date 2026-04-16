@@ -14,6 +14,27 @@ const SCOPES = [
 	"https://www.googleapis.com/auth/userinfo.profile",
 ];
 
+/**
+ * Helper to get a configured GSC client with decrypted tokens
+ */
+export function getGscClient(encryptedAccessToken: string, encryptedRefreshToken: string) {
+  const accessToken = decrypt(encryptedAccessToken);
+  const refreshToken = decrypt(encryptedRefreshToken);
+
+  const client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    `${process.env.BETTER_AUTH_URL}/api/gsc/auth/callback`
+  );
+
+  client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  return client;
+}
+
 export function getGscAuthUrl() {
 	return oauth2Client.generateAuthUrl({
 		access_type: "offline",
@@ -268,4 +289,147 @@ export async function runSiteAudit(siteId: string) {
 
 	// Start by inspecting the homepage (the root domain)
 	return inspectUrl(siteId, site.domain);
+}
+
+export async function getGrowthInsights(siteId: string) {
+	// 1. Fetch current keyword performance (last 7 days average)
+	const now = new Date();
+	const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+	const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+	const currentKeywords = await prisma.keywordPerformance.findMany({
+		where: { siteId, date: { gte: sevenDaysAgo } },
+	});
+
+	const previousKeywords = await prisma.keywordPerformance.findMany({
+		where: { siteId, date: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+	});
+
+	const winners: any[] = [];
+	const losers: any[] = [];
+	const pageOneRadar: any[] = [];
+
+	// Simple comparison logic
+	currentKeywords.forEach((curr) => {
+		const prev = previousKeywords.find((p) => p.keyword === curr.keyword);
+		if (prev) {
+			const delta = prev.position - curr.position;
+			if (delta >= 3) winners.push({ ...curr, delta });
+			if (delta <= -3) losers.push({ ...curr, delta });
+		}
+
+		// Edge of Page 1 Radar (Position 11-15)
+		if (curr.position > 10 && curr.position < 16) {
+			pageOneRadar.push(curr);
+		}
+	});
+
+	return {
+		winners: winners.sort((a, b) => b.delta - a.delta).slice(0, 5),
+		losers: losers.sort((a, b) => a.delta - b.delta).slice(0, 5),
+		pageOneRadar: pageOneRadar.sort((a, b) => a.position - b.position).slice(0, 5),
+	};
+}
+
+export async function getVolatilityScore(siteId: string) {
+	const performance = await prisma.sitePerformance.findMany({
+		where: { siteId },
+		orderBy: { date: "desc" },
+		take: 14,
+	});
+
+	if (performance.length < 2) return 0;
+
+	// Calculate standard deviation of position movements
+	const movements = performance.slice(0, -1).map((p, i) => Math.abs(p.position - performance[i + 1].position));
+	const avgMovement = movements.reduce((a, b) => a + b, 0) / movements.length;
+
+	return avgMovement.toFixed(2);
+}
+
+export async function getCTROpportunities(siteId: string) {
+	const currentKeywords = await prisma.keywordPerformance.findMany({
+		where: { 
+			siteId, 
+			date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
+		},
+	});
+
+	// Find keywords with > 300 impressions but < 2% CTR
+	const opportunities = currentKeywords.filter(kw => {
+		return kw.impressions > 300 && kw.ctr < 0.02;
+	});
+
+	return opportunities.sort((a, b) => b.impressions - a.impressions).slice(0, 5);
+}
+
+/**
+ * Fetches sitemaps for the property and analyzes their health
+ */
+export async function getSitemapStatus(siteId: string) {
+  const account = await prisma.site.findUnique({
+    where: { id: siteId },
+    include: { gscAccount: true }
+  })
+
+  if (!account?.gscAccount || !account.domain) return []
+
+  const auth = getGscClient(account.gscAccount.accessToken, account.gscAccount.refreshToken)
+  const gsc = google.searchconsole({ version: "v1", auth })
+
+  try {
+    const response = await gsc.sitemaps.list({
+      siteUrl: account.domain
+    })
+
+    return response.data.sitemaps || []
+  } catch (error) {
+    console.error("Error fetching sitemaps:", error)
+    return []
+  }
+}
+
+/**
+ * Computes a technical health score based on sitemaps and recent audits
+ */
+export async function getTechnicalHealth(siteId: string) {
+  const sitemaps = await getSitemapStatus(siteId)
+  const audits = await prisma.urlAudit.findMany({
+    where: { siteId },
+    orderBy: { updatedAt: "desc" },
+    take: 10
+  })
+
+  let score = 100
+  const issues: string[] = []
+
+  // Sitemap Checks
+  if (sitemaps.length === 0) {
+    score -= 20
+    issues.push("No sitemaps detected")
+  } else {
+    for (const s of sitemaps) {
+      if (s.errors && parseInt(s.errors as string) > 0) {
+        score -= 15
+        issues.push(`Errors in sitemap: ${s.path}`)
+      }
+      if (s.warnings && parseInt(s.warnings as string) > 0) {
+        score -= 5
+      }
+    }
+  }
+
+  // Audit Checks
+  const failedAudits = audits.filter(a => a.inspectionStatus !== "INDEXED")
+  if (failedAudits.length > 0) {
+    score -= (failedAudits.length * 5)
+    issues.push(`${failedAudits.length} recently scanned URLs are not indexed`)
+  }
+
+  return {
+    score: Math.max(0, score),
+    issues,
+    sitemapCount: sitemaps.length,
+    lastScanned: audits[0]?.updatedAt || null
+  }
 }
