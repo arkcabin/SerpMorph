@@ -4,7 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
@@ -22,6 +22,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  gscAccounts   GscAccount[]
+  sites         Site[]
 }
 
 model Session {
@@ -60,4 +62,30 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model GscAccount {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleEmail           String
+  accessToken           String
+  refreshToken          String
+  accessTokenExpiresAt  DateTime
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  sites                 Site[]
+}
+
+model Site {
+  id            String      @id @default(cuid())
+  domain        String
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gscAccountId  String?
+  gscAccount    GscAccount? @relation(fields: [gscAccountId], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([domain, userId])
 }

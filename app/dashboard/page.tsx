@@ -5,6 +5,8 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getServerAuthSession } from "@/lib/session"
+import { prisma } from "@/lib/prisma"
+import Link from "next/link"
 
 export default async function DashboardPage() {
   const session = await getServerAuthSession()
@@ -13,12 +15,17 @@ export default async function DashboardPage() {
     redirect("/auth/signin?callbackUrl=/dashboard")
   }
 
+  const sites = await prisma.site.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+  })
+
   const userName = session.user.name ?? "User"
   const metrics = [
-    { label: "Connected Properties", value: "0", helper: "Google Search Console" },
+    { label: "Connected Properties", value: sites.length.toString(), helper: "Google Search Console" },
     { label: "Tracked URLs", value: "0", helper: "Ready for auditing" },
     { label: "Avg. Position", value: "-", helper: "No synced keywords yet" },
-    { label: "Last Sync", value: "Never", helper: "Connect account to start" },
+    { label: "Last Sync", value: sites.length > 0 ? "Just now" : "Never", helper: "Connect account to start" },
   ]
 
   return (
@@ -35,13 +42,17 @@ export default async function DashboardPage() {
               <div className="space-y-1">
                 <CardTitle className="text-2xl">Welcome back, {userName}</CardTitle>
                 <CardDescription>
-                  Connect your Search Console property to unlock domain performance and SEO diagnostics.
+                  {sites.length > 0 
+                    ? `You have ${sites.length} properties connected via Google Search Console.`
+                    : "Connect your Search Console property to unlock domain performance and SEO diagnostics."}
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" className="gap-1.5 shadow-sm">
-                  <GlobeIcon className="size-4" />
-                  Connect GSC
+                <Button size="sm" className="gap-1.5 shadow-sm" asChild>
+                  <Link href="/api/gsc/auth">
+                    <GlobeIcon className="size-4" />
+                    Connect GSC
+                  </Link>
                 </Button>
                 <Button size="sm" variant="outline" className="gap-1.5 shadow-sm">
                   <SearchIcon className="size-4" />
@@ -108,20 +119,20 @@ export default async function DashboardPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Top Pages</CardTitle>
-                <CardDescription>Most visible pages from Search Console data</CardDescription>
+                <CardTitle>Connected Properties</CardTitle>
+                <CardDescription>Domains synced from Search Console data</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                {[
-                  { path: "/", clicks: "-", position: "-" },
-                  { path: "/blog", clicks: "-", position: "-" },
-                  { path: "/pricing", clicks: "-", position: "-" },
-                ].map((page) => (
-                  <div key={page.path} className="flex items-center justify-between rounded-md border p-3">
-                    <p className="font-medium">{page.path}</p>
-                    <p className="text-muted-foreground">{page.clicks} clicks / {page.position} pos</p>
-                  </div>
-                ))}
+                {sites.length > 0 ? (
+                  sites.slice(0, 5).map((site) => (
+                    <div key={site.id} className="flex items-center justify-between rounded-md border p-3">
+                      <p className="font-medium truncate max-w-[200px]">{site.domain}</p>
+                      <p className="text-muted-foreground">connected</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-4 italic">No properties connected yet.</p>
+                )}
               </CardContent>
             </Card>
 
