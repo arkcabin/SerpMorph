@@ -181,17 +181,11 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
                 config={{
                   clicks: {
                     label: "Clicks",
-                    theme: {
-                        light: "#ec4899", // Vibrant Pink
-                        dark: "#f472b6",  // Softer Pink for dark mode glow
-                    }
+                    color: "var(--chart-1)",
                   },
                   impressions: {
                     label: "Impressions",
-                    theme: {
-                        light: "#6366f1", // Indigo
-                        dark: "#818cf8",  // Lighter Indigo for visibility
-                    }
+                    color: "var(--chart-2)",
                   },
                 }}
                 className="h-full w-full"
@@ -218,29 +212,27 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
                     dataKey="formattedDate"
                     axisLine={false}
                     tickLine={false}
-                    tickMargin={12}
-                    minTickGap={32}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                    tickMargin={10}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                   />
                   <YAxis 
-                    yId="left"
+                    yAxisId="left"
                     axisLine={false}
                     tickLine={false}
-                    tickMargin={8}
-                    tick={{ fill: "var(--color-clicks)", fontSize: 10, fontWeight: 600 }}
+                    tickMargin={10}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                   />
                   <YAxis 
-                    yId="right"
+                    yAxisId="right"
                     orientation="right"
                     axisLine={false}
                     tickLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                    tick={{ fill: "var(--color-impressions)", fontSize: 10 }}
+                    tickMargin={10}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                   />
                   <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
                   <Area
-                    yId="left"
+                    yAxisId="left"
                     dataKey="clicks"
                     type="monotone"
                     fill="url(#fillClicks)"

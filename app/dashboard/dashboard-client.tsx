@@ -2,10 +2,12 @@
 
 import Link from "next/link"
 import { ArrowUpRightIcon, GlobeIcon, SearchIcon, SparklesIcon } from "lucide-react"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { useDashboardSummary } from "@/hooks/use-dashboard"
 import { formatGscDomain, isDomainProperty } from "@/lib/utils"
 
@@ -79,32 +81,69 @@ export function DashboardClient({ userName }: DashboardClientProps) {
             <CardDescription>Daily clicks for all properties (Last 15 entries)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="relative h-56 overflow-hidden rounded-lg border bg-muted/5">
-              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-primary/5 to-transparent" />
-              <div className="absolute inset-0 flex items-end gap-2 p-4">
-                {isLoading ? (
-                  Array.from({ length: 15 }).map((_, i) => (
-                    <Skeleton key={i} className="flex-1 rounded-sm" style={{ height: `${Math.random() * 60 + 10}%` }} />
-                  ))
-                ) : performance.length > 0 ? (
-                  performance.slice(-15).map((p: any, index: number) => {
-                    const maxClicks = Math.max(...performance.map((x: any) => x.clicks), 1);
-                    const height = (p.clicks / maxClicks) * 100;
-                    return (
-                      <div 
-                        key={index} 
-                        className="flex-1 rounded-sm bg-primary/20 hover:bg-primary/40 transition-colors" 
-                        style={{ height: `${Math.max(height, 5)}%` }} 
-                        title={`${new Date(p.date).toLocaleDateString()}: ${p.clicks} clicks`}
-                      />
-                    )
-                  })
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-muted-foreground italic text-sm">
-                    No performance data synced yet.
-                  </div>
-                )}
-              </div>
+            <div className="h-56 w-full">
+              {isLoading ? (
+                <div className="flex h-full w-full items-end gap-2 px-2 pb-8">
+                  {[60, 45, 75, 50, 80, 55, 70, 40, 65, 85, 50, 60, 75, 45, 80].map((h, i) => (
+                    <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              ) : performance.length > 0 ? (
+                <ChartContainer
+                  config={{
+                    clicks: {
+                      label: "Daily Clicks",
+                      color: "var(--chart-1)",
+                    },
+                  }}
+                  className="h-full w-full"
+                >
+                  <AreaChart
+                    data={performance.slice(-15).map((p: any) => ({
+                      ...p,
+                      formattedDate: new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                    }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillClicksDash" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-clicks)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="var(--color-clicks)" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                    <XAxis
+                      dataKey="formattedDate"
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    />
+                    <ChartTooltip 
+                      cursor={{ stroke: "var(--color-clicks)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                      content={<ChartTooltipContent indicator="line" />} 
+                    />
+                    <Area
+                      dataKey="clicks"
+                      type="monotone"
+                      fill="url(#fillClicksDash)"
+                      stroke="var(--color-clicks)"
+                      strokeWidth={2.5}
+                      animationDuration={1500}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/5">
+                  <p className="text-xs italic">No performance data synced yet.</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
