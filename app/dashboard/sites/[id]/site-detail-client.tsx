@@ -165,9 +165,16 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
           <div className="h-[350px] w-full">
             {loadingPerformance ? (
               <div className="flex h-full w-full items-end gap-2 px-2 pb-8">
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <Skeleton key={i} className="flex-1 rounded-t-lg" style={{ height: `${Math.random() * 60 + 20}%` }} />
-                ))}
+                {Array.from({ length: 15 }).map((_, i) => {
+                  const heights = [60, 45, 75, 50, 80, 55, 70, 40, 65, 85, 50, 60, 75, 45, 80]
+                  return (
+                    <Skeleton 
+                      key={i} 
+                      className="flex-1 rounded-t-lg" 
+                      style={{ height: `${heights[i % heights.length]}%` }} 
+                    />
+                  )
+                })}
               </div>
             ) : performance && performance.length > 0 ? (
               <ChartContainer

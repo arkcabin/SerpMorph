@@ -358,9 +358,9 @@ export async function getCTROpportunities(siteId: string) {
 		},
 	});
 
-	// Find keywords with > 300 impressions but < 2% CTR
+	// Find keywords with > 50 impressions but < 3% CTR (Easy wins for title optimization)
 	const opportunities = currentKeywords.filter(kw => {
-		return kw.impressions > 300 && kw.ctr < 0.02;
+		return kw.impressions > 50 && kw.ctr < 0.03;
 	});
 
 	return opportunities.sort((a, b) => b.impressions - a.impressions).slice(0, 5);
