@@ -86,6 +86,7 @@ model Site {
   gscAccount    GscAccount? @relation(fields: [gscAccountId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
   performance   SitePerformance[]
   keywords      KeywordPerformance[]
   audits        UrlAudit[]

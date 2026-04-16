@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
 
     // 1. Fetch all sites for the user
     const sites = await prisma.site.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        deletedAt: null
+      },
       orderBy: { createdAt: "desc" },
     })
 

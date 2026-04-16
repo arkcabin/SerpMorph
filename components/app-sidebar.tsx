@@ -138,25 +138,6 @@ const dataSidebar = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { data, isLoading } = useDashboardSummary()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-  
-  const sites = data?.sites || []
-  const dynamicProjects = sites.map((site: any) => ({
-    name: formatGscDomain(site.domain),
-    url: `/dashboard/sites/${site.id}`,
-    icon: <Globe className={`${isDomainProperty(site.domain) ? "text-blue-500" : "text-muted-foreground"}`} />,
-    isActive: false,
-  }))
-
-  const projectsToRender = !mounted || dynamicProjects.length === 0 
-    ? dataSidebar.projects 
-    : dynamicProjects
-
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
@@ -164,7 +145,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={dataSidebar.navMain} />
-        <NavProjects projects={projectsToRender} />
+        <NavProjects />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={dataSidebar.user} />

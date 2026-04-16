@@ -18,7 +18,11 @@ export async function GET(
 
     // Verify ownership and fetch site with late-night stats
     const site = await prisma.site.findUnique({
-      where: { id, userId },
+      where: { 
+        id, 
+        userId,
+        deletedAt: null
+      },
       include: {
         audits: {
           orderBy: { createdAt: "desc" },

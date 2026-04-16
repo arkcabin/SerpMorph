@@ -16,7 +16,11 @@ export async function GET(
   try {
     // Verify ownership
     const site = await prisma.site.findUnique({
-      where: { id, userId: session.user.id }
+      where: { 
+        id, 
+        userId: session.user.id,
+        deletedAt: null
+      }
     })
 
     if (!site) {
