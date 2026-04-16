@@ -20,12 +20,31 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   })
 
+  // Fetch latest performance data for all sites
+  const performance = await prisma.sitePerformance.findMany({
+    where: { siteId: { in: sites.map((s) => s.id) } },
+    orderBy: { date: "asc" },
+  })
+
+  // Fetch top keywords
+  const topKeywords = await prisma.keywordPerformance.findMany({
+    where: { siteId: { in: sites.map((s) => s.id) } },
+    orderBy: { clicks: "desc" },
+    take: 5,
+  })
+
+  const totalClicks = performance.reduce((sum, p) => sum + p.clicks, 0)
+  const totalImpressions = performance.reduce((sum, p) => sum + p.impressions, 0)
+  const avgPosition = performance.length > 0 
+    ? (performance.reduce((sum, p) => sum + p.position, 0) / performance.length).toFixed(1)
+    : "-"
+
   const userName = session.user.name ?? "User"
   const metrics = [
     { label: "Connected Properties", value: sites.length.toString(), helper: "Google Search Console" },
-    { label: "Tracked URLs", value: "0", helper: "Ready for auditing" },
-    { label: "Avg. Position", value: "-", helper: "No synced keywords yet" },
-    { label: "Last Sync", value: sites.length > 0 ? "Just now" : "Never", helper: "Connect account to start" },
+    { label: "Total Clicks", value: totalClicks.toLocaleString(), helper: "Last 30 days" },
+    { label: "Avg. Position", value: avgPosition, helper: "Across all properties" },
+    { label: "Total Impressions", value: (totalImpressions / 1000).toFixed(1) + "k", helper: "Visibility trend" },
   ]
 
   return (
@@ -80,15 +99,30 @@ export default async function DashboardPage() {
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Performance Trend</CardTitle>
-                <CardDescription>Clicks and impressions will appear here after your first sync.</CardDescription>
+                <CardDescription>Daily clicks for all properties (Last 10 entries)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="relative h-56 overflow-hidden rounded-lg border bg-muted/5">
                   <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-primary/5 to-transparent" />
-                  <div className="absolute inset-0 grid grid-cols-6 items-end gap-2 p-4">
-                    {[22, 44, 38, 61, 49, 74].map((value, index) => (
-                      <div key={index} className="rounded-sm bg-primary/20" style={{ height: `${value}%` }} />
-                    ))}
+                  <div className="absolute inset-0 flex items-end gap-2 p-4">
+                    {performance.length > 0 ? (
+                      performance.slice(-15).map((p, index) => {
+                        const maxClicks = Math.max(...performance.map(x => x.clicks), 1);
+                        const height = (p.clicks / maxClicks) * 100;
+                        return (
+                          <div 
+                            key={index} 
+                            className="flex-1 rounded-sm bg-primary/20 hover:bg-primary/40 transition-colors" 
+                            style={{ height: `${Math.max(height, 5)}%` }} 
+                            title={`${p.date.toLocaleDateString()}: ${p.clicks} clicks`}
+                          />
+                        )
+                      })
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground italic">
+                        No performance data synced yet.
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -120,15 +154,22 @@ export default async function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Connected Properties</CardTitle>
-                <CardDescription>Domains synced from Search Console data</CardDescription>
+                <CardDescription>Select a site to see detailed analytics</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 {sites.length > 0 ? (
-                  sites.slice(0, 5).map((site) => (
-                    <div key={site.id} className="flex items-center justify-between rounded-md border p-3">
-                      <p className="font-medium truncate max-w-[200px]">{site.domain}</p>
-                      <p className="text-muted-foreground">connected</p>
-                    </div>
+                  sites.map((site) => (
+                    <Link 
+                      key={site.id} 
+                      href={`/dashboard/sites/${site.id}`}
+                      className="flex items-center justify-between rounded-md border p-3 hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <GlobeIcon className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <p className="font-medium truncate max-w-[200px]">{site.domain}</p>
+                      </div>
+                      <ArrowUpRightIcon className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0" />
+                    </Link>
                   ))
                 ) : (
                   <p className="text-muted-foreground text-center py-4 italic">No properties connected yet.</p>

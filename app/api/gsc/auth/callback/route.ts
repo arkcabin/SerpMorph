@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/session";
-import { getGscTokens, getGscUserInfo, syncGscProperties } from "@/lib/gsc";
+import { getGscTokens, getGscUserInfo, syncGscProperties, syncAllSiteData } from "@/lib/gsc";
 import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/encryption";
 
@@ -48,7 +48,19 @@ export async function GET(req: NextRequest) {
 		});
 
 		// Start initial property sync
-		await syncGscProperties(session.user.id, gscAccount.id);
+		const syncedSites = await syncGscProperties(session.user.id, gscAccount.id);
+
+		// Sync performance data for each site in the background (or sequential here for initial)
+		for (const site of syncedSites) {
+			if (site) {
+				console.log(`Initial sync for ${site.domain}...`);
+				try {
+					await syncAllSiteData(site.id);
+				} catch (err) {
+					console.error(`Failed to sync data for ${site.domain}:`, err);
+				}
+			}
+		}
 
 		return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
 	} catch (error) {

@@ -86,6 +86,52 @@ model Site {
   gscAccount    GscAccount? @relation(fields: [gscAccountId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  performance   SitePerformance[]
+  keywords      KeywordPerformance[]
+  audits        UrlAudit[]
 
   @@unique([domain, userId])
+}
+
+model SitePerformance {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  date        DateTime
+  clicks      Int
+  impressions Int
+  ctr         Float
+  position    Float
+  
+  @@unique([siteId, date])
+}
+
+model KeywordPerformance {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  date        DateTime
+  keyword     String
+  page        String?
+  clicks      Int
+  impressions Int
+  ctr         Float
+  position    Float
+
+  @@unique([siteId, date, keyword])
+}
+
+model UrlAudit {
+  id               String   @id @default(cuid())
+  siteId           String
+  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  url              String
+  inspectionStatus String?
+  lastCrawlTime    DateTime?
+  isMobileFriendly Boolean?
+  sitemap          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([siteId, url])
 }
