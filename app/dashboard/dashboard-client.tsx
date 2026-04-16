@@ -83,10 +83,8 @@ export function DashboardClient({ userName }: DashboardClientProps) {
           <CardContent>
             <div className="h-56 w-full">
               {isLoading ? (
-                <div className="flex h-full w-full items-end gap-2 px-2 pb-8">
-                  {[60, 45, 75, 50, 80, 55, 70, 40, 65, 85, 50, 60, 75, 45, 80].map((h, i) => (
-                    <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%` }} />
-                  ))}
+                <div className="flex h-full w-full items-end justify-center px-2 pb-6">
+                  <Skeleton className="h-[80%] w-full rounded-xl opacity-40" />
                 </div>
               ) : performance.length > 0 ? (
                 <ChartContainer

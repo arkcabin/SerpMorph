@@ -21,6 +21,8 @@ import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
+import { useDashboardSummary } from "@/hooks/use-dashboard"
+import { formatGscDomain, isDomainProperty } from "@/lib/utils"
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +31,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-const data = {
+const dataSidebar = {
   user: {
     name: "Admin User",
     email: "admin@serpmorph.com",
@@ -136,17 +138,36 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data, isLoading } = useDashboardSummary()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  const sites = data?.sites || []
+  const dynamicProjects = sites.map((site: any) => ({
+    name: formatGscDomain(site.domain),
+    url: `/dashboard/sites/${site.id}`,
+    icon: <Globe className={`${isDomainProperty(site.domain) ? "text-blue-500" : "text-muted-foreground"}`} />,
+    isActive: false,
+  }))
+
+  const projectsToRender = !mounted || dynamicProjects.length === 0 
+    ? dataSidebar.projects 
+    : dynamicProjects
+
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={dataSidebar.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={dataSidebar.navMain} />
+        <NavProjects projects={projectsToRender} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={dataSidebar.user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
