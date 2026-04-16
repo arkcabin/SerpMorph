@@ -242,7 +242,7 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
                     animationDuration={1500}
                   />
                   <Area
-                    yId="right"
+                    yAxisId="right"
                     dataKey="impressions"
                     type="monotone"
                     fill="url(#fillImpressions)"
