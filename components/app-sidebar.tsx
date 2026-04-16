@@ -1,80 +1,156 @@
-"use client";
+"use client"
 
-import { LogoIcon } from "@/components/logo";
-import { Button } from "@/components/ui/button";
+import * as React from "react"
 import {
-	Sidebar,
-	SidebarContent,
-	SidebarFooter,
-	SidebarGroup,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { NavGroup } from "@/components/nav-group";
-import { footerNavLinks, navGroups } from "@/components/app-shared";
-import { LatestChange } from "@/components/latest-change";
-import { PlusIcon, SearchIcon } from "lucide-react";
+  LayoutDashboard,
+  Search,
+  ShieldCheck,
+  Hash,
+  Globe,
+  Settings2,
+  History,
+  Plus,
+  BarChart3,
+  FileSearch,
+  Command,
+  AudioWaveform,
+  GalleryVerticalEnd
+} from "lucide-react"
 
-export function AppSidebar() {
-	return (
-		<Sidebar collapsible="icon" variant="floating">
-			<SidebarHeader className="h-14 justify-center">
-				<SidebarMenuButton asChild>
-					<a href="/dashboard">
-						<LogoIcon />
-						<span className="font-medium">SerpMorph</span>
-					</a>
-				</SidebarMenuButton>
-			</SidebarHeader>
-			<SidebarContent>
-				<SidebarGroup>
-					<SidebarMenuItem className="flex items-center gap-2">
-						<SidebarMenuButton
-							className="min-w-8 bg-brand-primary text-brand-primary-foreground duration-200 ease-linear hover:bg-brand-primary/90 hover:text-brand-primary-foreground active:bg-brand-primary/90 active:text-brand-primary-foreground"
-							tooltip="Run SEO audit"
-						>
-							<PlusIcon
-							/>
-							<span>New audit</span>
-						</SidebarMenuButton>
-						<Button
-							aria-label="Search dashboard"
-							className="size-8 group-data-[collapsible=icon]:opacity-0 border-sidebar-border"
-							size="icon"
-							variant="outline"
-						>
-							<SearchIcon
-							/>
-							<span className="sr-only">Search dashboard</span>
-						</Button>
-					</SidebarMenuItem>
-				</SidebarGroup>
-				{navGroups.map((group, index) => (
-					<NavGroup key={`sidebar-group-${index}`} {...group} />
-				))}
-			</SidebarContent>
-			<SidebarFooter>
-				<LatestChange />
-				<SidebarMenu className="mt-2">
-					{footerNavLinks.map((item) => (
-						<SidebarMenuItem key={item.title}>
-							<SidebarMenuButton
-								asChild
-								className="text-muted-foreground"
-								isActive={item.isActive}
-								size="sm"
-							>
-								<a href={item.path}>
-									{item.icon}
-									<span>{item.title}</span>
-								</a>
-							</SidebarMenuButton>
-						</SidebarMenuItem>
-					))}
-				</SidebarMenu>
-			</SidebarFooter>
-		</Sidebar>
-	);
+import { NavMain } from "@/components/nav-main"
+import { NavProjects } from "@/components/nav-projects"
+import { NavUser } from "@/components/nav-user"
+import { TeamSwitcher } from "@/components/team-switcher"
+import { useDashboardSummary } from "@/hooks/use-dashboard"
+import { formatGscDomain, isDomainProperty } from "@/lib/utils"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+
+const dataSidebar = {
+  user: {
+    name: "Admin User",
+    email: "admin@serpmorph.com",
+    avatar: "/avatars/admin.jpg",
+  },
+  teams: [
+    {
+      name: "SerpMorph Main",
+      logo: <GalleryVerticalEnd />,
+      plan: "Pro Plan",
+    },
+    {
+      name: "Client Agency",
+      logo: <AudioWaveform />,
+      plan: "Agency Plan",
+    },
+  ],
+  navMain: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: <LayoutDashboard />,
+      isActive: true,
+    },
+    {
+      title: "SEO Audits",
+      url: "/audits",
+      icon: <ShieldCheck />,
+      items: [
+        {
+          title: "Audit History",
+          url: "/audits/history",
+        },
+        {
+          title: "New Audit",
+          url: "/audits/new",
+        },
+      ],
+    },
+    {
+      title: "Search Console",
+      url: "/console",
+      icon: <Search />,
+      items: [
+        {
+          title: "Performance",
+          url: "/console/performance",
+        },
+        {
+          title: "URL Inspection",
+          url: "/console/inspection",
+        },
+      ],
+    },
+    {
+      title: "Keywords",
+      url: "/keywords",
+      icon: <Hash />,
+      items: [
+        {
+          title: "Rank Tracker",
+          url: "/keywords/tracker",
+        },
+        {
+          title: "Keyword Research",
+          url: "/keywords/research",
+        },
+      ],
+    },
+    {
+      title: "Settings",
+      url: "/settings",
+      icon: <Settings2 />,
+      items: [
+        {
+          title: "General",
+          url: "/settings/general",
+        },
+        {
+          title: "Team",
+          url: "/settings/team",
+        },
+        {
+          title: "Billing",
+          url: "/settings/billing",
+        },
+      ],
+    },
+  ],
+  projects: [
+    {
+      name: "serpmorph.com",
+      url: "https://serpmorph.com",
+      icon: <Globe />,
+      isActive: false,
+    },
+    {
+      name: "my-blog-site.io",
+      url: "https://my-blog-site.io",
+      icon: <Globe />,
+      isActive: false,
+    },
+  ],
+}
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  return (
+    <Sidebar collapsible="icon" variant="floating" {...props}>
+      <SidebarHeader>
+        <TeamSwitcher teams={dataSidebar.teams} />
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={dataSidebar.navMain} />
+        <NavProjects />
+      </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={dataSidebar.user} />
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  )
 }

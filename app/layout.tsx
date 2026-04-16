@@ -12,6 +12,9 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+import { QueryProvider } from "@/components/providers/query-provider"
+import { Toaster } from "sonner"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,7 +28,12 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <QueryProvider>
+              {children}
+              <Toaster position="bottom-right" theme="system" richColors closeButton />
+            </QueryProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

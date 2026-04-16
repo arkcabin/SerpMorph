@@ -1,25 +1,28 @@
-import { PrismaClient } from "@/generated/prisma/client"
+import { PrismaClient } from "@/generated/prisma"
 import { PrismaPg } from "@prisma/adapter-pg"
 
+/**
+ * Prisma Client Singleton with better resilience for development hot-reloading.
+ * Following best practices for Next.js 15+ and Turbopack.
+ */
+
 const globalForPrisma = globalThis as unknown as {
-  prisma: (PrismaClient & { __adapterTag?: string }) | undefined
+  prisma: PrismaClient | undefined
 }
 
 function createPrismaClient() {
   const client = new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" }),
-    log: ["error"],
-  }) as PrismaClient & { __adapterTag?: string }
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  })
 
-  client.__adapterTag = "pg"
   return client
 }
 
-const cached = globalForPrisma.prisma
-const prismaClient = cached?.__adapterTag === "pg" ? cached : createPrismaClient()
-
-export const prisma = prismaClient
+// In development, the client is cached on globalThis to prevent 
+// exhausting database connections during hot reloads.
+export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prismaClient
+  globalForPrisma.prisma = prisma
 }
