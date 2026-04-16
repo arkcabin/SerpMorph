@@ -23,7 +23,7 @@ export function AppHeader({ user }: AppHeaderProps) {
 	return (
 		<header
 			className={cn(
-				"sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-2 border-b bg-background/80 px-4 backdrop-blur-md transition-[width,height] ease-linear md:px-6"
+				"sticky top-2 z-20 mx-4 mt-2 flex h-14 shrink-0 items-center justify-between gap-2 rounded-2xl border bg-background/95 px-4 shadow-sm backdrop-blur-md transition-[width,height] ease-linear md:mx-6 md:px-6"
 			)}
 		>
 			<div className="flex items-center gap-3">
