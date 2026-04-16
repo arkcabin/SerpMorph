@@ -248,7 +248,10 @@ export async function inspectUrl(siteId: string, url: string) {
 	// Use the URL Inspection API to get real-time indexing data from Google
 	const res = await searchconsole.urlInspection.index.inspect({
 		requestBody: {
-			inspectionUrl: url,
+			// Ensure inspectionUrl is always a valid fully qualified URL
+			inspectionUrl: url.startsWith("sc-domain:") 
+                ? `https://${url.replace("sc-domain:", "")}/` 
+                : url,
 			siteUrl: site.domain,
 		},
 	});
@@ -382,7 +385,7 @@ export async function getSitemapStatus(siteId: string) {
       siteUrl: account.domain
     })
 
-    return response.data.sitemaps || []
+    return response.data.sitemap || []
   } catch (error) {
     console.error("Error fetching sitemaps:", error)
     return []

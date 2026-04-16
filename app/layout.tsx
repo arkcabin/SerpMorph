@@ -12,6 +12,8 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+import { QueryProvider } from "@/components/providers/query-provider"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,7 +27,9 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <QueryProvider>{children}</QueryProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
