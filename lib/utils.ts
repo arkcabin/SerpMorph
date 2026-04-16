@@ -7,7 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatGscDomain(domain: string) {
   if (!domain) return ""
-  return domain.replace("sc-domain:", "")
+  return domain
+    .replace("sc-domain:", "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "")
 }
 
 export function isDomainProperty(domain: string) {

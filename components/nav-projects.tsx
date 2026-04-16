@@ -85,15 +85,28 @@ export function NavProjects() {
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item: any) => (
-          <SidebarMenuItem key={item.id}>
-            <SidebarMenuButton asChild>
-              <a href={`/dashboard/sites/${item.id}`}>
-                <Globe className={`size-4 ${isDomainProperty(item.domain) ? "text-blue-500" : "text-muted-foreground"}`} />
-                <span>{formatGscDomain(item.domain)}</span>
-              </a>
-            </SidebarMenuButton>
-            <DropdownMenu>
+        {projects.map((item: any) => {
+          const displayDomain = formatGscDomain(item.domain)
+          return (
+            <SidebarMenuItem key={item.id}>
+              <SidebarMenuButton asChild>
+                <a href={`/dashboard/sites/${item.id}`}>
+                  <div className="flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm">
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${displayDomain}&sz=32`}
+                      alt=""
+                      className="size-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                      }}
+                    />
+                    <Globe className="hidden size-4 text-muted-foreground" />
+                  </div>
+                  <span>{displayDomain}</span>
+                </a>
+              </SidebarMenuButton>
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuAction
                   showOnHover
@@ -123,8 +136,9 @@ export function NavProjects() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </SidebarMenuItem>
-        ))}
+            </SidebarMenuItem>
+          )
+        })}
         {projects.length === 0 && (
            <SidebarMenuItem>
             <SidebarMenuButton disabled className="text-muted-foreground">
