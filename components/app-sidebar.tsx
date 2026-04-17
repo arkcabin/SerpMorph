@@ -30,7 +30,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { PanelLeft } from "lucide-react"
 
 const dataSidebar = {
   user: {
@@ -156,6 +159,8 @@ const dataSidebar = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { toggleSidebar } = useSidebar()
+
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
@@ -166,7 +171,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={dataSidebar.user} />
+        <div className="flex items-center justify-between px-1 py-1 group-data-[collapsible=icon]:justify-center">
+          <div className="group-data-[collapsible=icon]:hidden">
+            <NavUser user={dataSidebar.user} />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden h-8 w-8 md:flex"
+            onClick={toggleSidebar}
+          >
+            <PanelLeft className="size-4 text-muted-foreground" />
+          </Button>
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
