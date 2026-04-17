@@ -10,13 +10,15 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { useDashboardSummary } from "@/hooks/use-dashboard"
 import { formatGscDomain, isDomainProperty } from "@/lib/utils"
+import { useSite } from "@/context/site-context"
 
 interface DashboardClientProps {
   userName: string
 }
 
 export function DashboardClient({ userName }: DashboardClientProps) {
-  const { data, isLoading } = useDashboardSummary()
+  const { activeSiteId } = useSite()
+  const { data, isLoading } = useDashboardSummary(activeSiteId)
 
   const sites = data?.sites || []
   const stats = data?.stats

@@ -19,9 +19,9 @@ import {
 
 import Image from "next/image"
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
+import { ProjectSwitcher } from "@/components/project-switcher"
 import { useDashboardSummary } from "@/hooks/use-dashboard"
 import { formatGscDomain, isDomainProperty } from "@/lib/utils"
 import {
@@ -142,20 +142,6 @@ const dataSidebar = {
       ],
     },
   ],
-  projects: [
-    {
-      name: "seomo.io",
-      url: "https://seomo.io",
-      icon: <Globe />,
-      isActive: false,
-    },
-    {
-      name: "my-blog-site.io",
-      url: "https://my-blog-site.io",
-      icon: <Globe />,
-      isActive: false,
-    },
-  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -163,12 +149,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="gap-0 pb-0">
         <TeamSwitcher teams={dataSidebar.teams} />
+        <ProjectSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={dataSidebar.navMain} />
-        <NavProjects />
       </SidebarContent>
       <SidebarFooter>
         <div className="flex items-center justify-between px-1 py-1 group-data-[collapsible=icon]:justify-center">

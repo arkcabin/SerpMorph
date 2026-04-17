@@ -11,8 +11,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const userId = session.user.id
+    const { searchParams } = new URL(req.url)
+    const activeSiteId = searchParams.get("siteId")
 
-    // 1. Fetch all sites for the user
+    // 1. Fetch all sites for the user (always needed for the switcher)
     const sites = await prisma.site.findMany({
       where: { 
         userId,
@@ -21,31 +23,32 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     })
 
-    const siteIds = sites.map((s) => s.id)
+    // Filter which site IDs to fetch performance for
+    const targetSiteIds = activeSiteId ? [activeSiteId] : sites.map((s) => s.id)
 
-    // 2. Fetch performance data for all sites (last 30 days)
+    // 2. Fetch performance data (last 30 days)
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const performance = await prisma.sitePerformance.findMany({
       where: { 
-        siteId: { in: siteIds },
+        siteId: { in: targetSiteIds },
         date: { gte: thirtyDaysAgo }
       },
       orderBy: { date: "asc" },
     })
 
-    // 3. Fetch top keywords across all properties
+    // 3. Fetch top keywords
     const topKeywords = await prisma.keywordPerformance.findMany({
       where: { 
-        siteId: { in: siteIds },
+        siteId: { in: targetSiteIds },
         date: { gte: thirtyDaysAgo }
       },
       orderBy: { clicks: "desc" },
       take: 5,
     })
 
-    // 4. Calculate aggregated metrics
+    // 4. Calculate aggregated metrics (now scoped to targetSiteIds)
     const totalClicks = performance.reduce((sum, p) => sum + p.clicks, 0)
     const totalImpressions = performance.reduce((sum, p) => sum + p.impressions, 0)
     const avgPosition = performance.length > 0 

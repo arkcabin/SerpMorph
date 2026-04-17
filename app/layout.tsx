@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 }
 
 import { QueryProvider } from "@/components/providers/query-provider"
+import { SiteProvider } from "@/context/site-context"
 import { Toaster } from "sonner"
 
 export default function RootLayout({
@@ -57,13 +58,15 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             <QueryProvider>
-              {children}
-              <Toaster
-                position="bottom-right"
-                theme="system"
-                richColors
-                closeButton
-              />
+              <SiteProvider>
+                {children}
+                <Toaster
+                  position="bottom-right"
+                  theme="system"
+                  richColors
+                  closeButton
+                />
+              </SiteProvider>
             </QueryProvider>
           </TooltipProvider>
         </ThemeProvider>

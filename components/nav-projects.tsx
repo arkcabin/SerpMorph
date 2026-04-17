@@ -24,8 +24,11 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { useSite } from "@/context/site-context"
+
 export function NavProjects() {
   const { data, isLoading } = useDashboardSummary()
+  const { activeSiteId, setActiveSiteId } = useSite()
   const router = useRouter()
   const queryClient = useQueryClient()
   const { isMobile } = useSidebar()
@@ -34,6 +37,18 @@ export function NavProjects() {
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const syncMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/sites/${id}/sync`, { method: "POST" })
+      if (!res.ok) throw new Error("Sync failed")
+      return res
+    },
+    onSuccess: () => {
+      // Refresh dashboard summary silently
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
+    },
+  })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -69,6 +84,13 @@ export function NavProjects() {
 
   const projects = data?.sites || []
 
+  const handleSelect = (id: string) => {
+    setActiveSiteId(id)
+    syncMutation.mutate(id)
+    // Optionally stay on dashboard if already there, or redirect
+    router.push("/dashboard")
+  }
+
   const handleShare = (domain: string) => {
     const url = `${window.location.origin}/dashboard/sites/${domain}`
     navigator.clipboard.writeText(url)
@@ -87,55 +109,62 @@ export function NavProjects() {
       <SidebarMenu>
         {projects.map((item: any) => {
           const displayDomain = formatGscDomain(item.domain)
+          const isActive = activeSiteId === item.id
+
           return (
             <SidebarMenuItem key={item.id}>
-              <SidebarMenuButton asChild>
-                <a href={`/dashboard/sites/${item.id}`}>
-                  <div className="flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm">
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${displayDomain}&sz=32`}
-                      alt=""
-                      className="size-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                      }}
-                    />
-                    <Globe className="hidden size-4 text-muted-foreground" />
-                  </div>
-                  <span>{displayDomain}</span>
-                </a>
+              <SidebarMenuButton 
+                isActive={isActive}
+                onClick={() => handleSelect(item.id)}
+                tooltip={`Select ${displayDomain}`}
+              >
+                <div className="flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm">
+                  <img
+                    src={`https://www.google.com/s2/favicons?domain=${displayDomain}&sz=32`}
+                    alt=""
+                    className="size-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                    }}
+                  />
+                  <Globe className="hidden size-4 text-muted-foreground" />
+                </div>
+                <span>{displayDomain}</span>
+                {syncMutation.isPending && syncMutation.variables === item.id && (
+                  <div className="ml-auto size-2 animate-pulse rounded-full bg-primary" />
+                )}
               </SidebarMenuButton>
               <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuAction
-                  showOnHover
-                  className="aria-expanded:bg-muted"
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuAction
+                    showOnHover
+                    className="aria-expanded:bg-muted"
+                  >
+                    <MoreHorizontalIcon />
+                    <span className="sr-only">More</span>
+                  </SidebarMenuAction>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-48 rounded-lg"
+                  side={isMobile ? "bottom" : "right"}
+                  align={isMobile ? "end" : "start"}
                 >
-                  <MoreHorizontalIcon />
-                  <span className="sr-only">More</span>
-                </SidebarMenuAction>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-48 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}
-              >
-                <DropdownMenuItem onClick={() => router.push(`/dashboard/sites/${item.id}`)}>
-                  <FolderIcon className="text-muted-foreground" />
-                  <span>View Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleShare(item.id)}>
-                  <ArrowRightIcon className="text-muted-foreground" />
-                  <span>Share Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive focus:text-destructive">
-                  <Trash2Icon />
-                  <span>Delete Project</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onClick={() => router.push(`/dashboard/sites/${item.id}`)}>
+                    <FolderIcon className="text-muted-foreground" />
+                    <span>View Project</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare(item.id)}>
+                    <ArrowRightIcon className="text-muted-foreground" />
+                    <span>Share Project</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive focus:text-destructive">
+                    <Trash2Icon />
+                    <span>Delete Project</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </SidebarMenuItem>
           )
         })}
