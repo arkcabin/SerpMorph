@@ -97,7 +97,7 @@ export default function HomePage() {
         <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 md:py-10">
           <header className="animate-in fade-in slide-in-from-top-4 flex items-center justify-between duration-1000">
             <div className="group flex items-center gap-3">
-              <div className="group-hover:shadow-glow relative flex size-9 items-center justify-center overflow-hidden rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm transition-all group-hover:scale-105">
+            <div className="relative flex size-9 items-center justify-center transition-all group-hover:scale-105">
                 <div className="absolute inset-0 bg-linear-to-tr from-primary/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 <Image
                   src="/logo-dark.png"
