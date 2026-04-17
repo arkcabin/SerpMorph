@@ -14,9 +14,10 @@ import {
   FileSearch,
   Command,
   AudioWaveform,
-  GalleryVerticalEnd
+  GalleryVerticalEnd,
 } from "lucide-react"
 
+import Image from "next/image"
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
@@ -34,13 +35,30 @@ import {
 const dataSidebar = {
   user: {
     name: "Admin User",
-    email: "admin@serpmorph.com",
+    email: "admin@seomo.io",
     avatar: "/avatars/admin.jpg",
   },
   teams: [
     {
-      name: "SerpMorph Main",
-      logo: <GalleryVerticalEnd />,
+      name: "Seomo Main",
+      logo: (
+        <div className="relative flex size-6 items-center justify-center">
+          <Image
+            src="/logo-dark.png"
+            alt="Seomo"
+            width={24}
+            height={24}
+            className="block object-contain dark:hidden"
+          />
+          <Image
+            src="/logo-light.png"
+            alt="Seomo"
+            width={24}
+            height={24}
+            className="hidden object-contain dark:block"
+          />
+        </div>
+      ),
       plan: "Pro Plan",
     },
     {
@@ -123,8 +141,8 @@ const dataSidebar = {
   ],
   projects: [
     {
-      name: "serpmorph.com",
-      url: "https://serpmorph.com",
+      name: "seomo.io",
+      url: "https://seomo.io",
       icon: <Globe />,
       isActive: false,
     },

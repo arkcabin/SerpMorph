@@ -1,6 +1,6 @@
-# SerpMorph Release and Versioning Guide
+# Seomo Release and Versioning Guide
 
-This guide explains how automated versioning works in SerpMorph, how to use it correctly, and how to troubleshoot common release failures.
+This guide explains how automated versioning works in Seomo, how to use it correctly, and how to troubleshoot common release failures.
 
 ## 1. What this system does
 

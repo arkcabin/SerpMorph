@@ -1,4 +1,4 @@
-# SerpMorph
+# Seomo
 
 <p align="center">
 	Turn Google Search Console data into clear SEO actions.
@@ -12,11 +12,11 @@
 	<img alt="Database" src="https://img.shields.io/badge/Database-Neon_PostgreSQL-00e699" />
 </p>
 
-SerpMorph is a modern SEO analytics app that combines Google Search Console insights with on-page SEO checks in one focused dashboard.
+Seomo is a modern SEO analytics app that combines Google Search Console insights with on-page SEO checks in one focused dashboard.
 
-## Why SerpMorph
+## Why Seomo
 
-Search Console gives great data, but it can be hard to translate into action quickly. SerpMorph helps by bringing performance metrics and technical checks together so teams can spot issues, prioritize fixes, and track progress in one place.
+Search Console gives great data, but it can be hard to translate into action quickly. Seomo helps by bringing performance metrics and technical checks together so teams can spot issues, prioritize fixes, and track progress in one place.
 
 ## What It Does
 
@@ -97,7 +97,7 @@ Open http://localhost:3000
 
 ## Automated Versioning
 
-SerpMorph now uses commit-based automated versioning on merge/push to main.
+Seomo now uses commit-based automated versioning on merge/push to main.
 
 - GitHub Action: [.github/workflows/release.yml](.github/workflows/release.yml)
 - Release config: [.releaserc.json](.releaserc.json)
