@@ -110,14 +110,14 @@ export function ProjectSwitcher() {
               Switch Property
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="mx-1 my-1" />
-            <div className="max-h-[300px] overflow-y-auto px-1">
+            <div className="max-h-[340px] overflow-y-auto px-1 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
               {projects.map((project: ProjectItem) => {
                 const domain = formatGscDomain(project.domain)
                 return (
                     <DropdownMenuItem
                     key={project.id}
                     onClick={() => handleSelect(project.id)}
-                    className="flex items-center gap-2.5 rounded-lg p-1.5 focus:bg-primary/5 focus:text-primary-foreground group"
+                    className="flex items-center gap-2.5 rounded-lg p-1.5 focus:bg-primary/5 focus:text-primary group"
                     >
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/40 bg-background group-focus:border-primary/20 shadow-xs transition-colors">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -138,7 +138,7 @@ export function ProjectSwitcher() {
                         </span>
                     </div>
                     {activeSiteId === project.id ? (
-                        <Check className="size-3.5 text-primary" />
+                        <Check className="size-3.5 text-primary stroke-[3]" />
                     ) : syncMutation.isPending && syncMutation.variables === project.id ? (
                         <Loader2 className="size-3 animate-spin text-muted-foreground" />
                     ) : null}

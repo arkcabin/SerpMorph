@@ -77,13 +77,36 @@ export function useInspection(siteId?: string | null, search: string = "", page:
     },
   })
 
+  const inspectSingleMutation = useMutation({
+    mutationFn: async (url: string) => {
+      if (!siteId) throw new Error("No site selected")
+      const res = await fetch(`/api/sites/${siteId}/inspect/single`, {
+          method: "POST",
+          body: JSON.stringify({ url })
+      })
+      if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.error || "Inspection failed")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inspection", siteId] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to inspect URL")
+    },
+  })
+
   return {
     urls,
     recordCount,
     isLoading: query.isLoading,
     isScanning: scanMutation.isPending,
     isProcessing: processMutation.isPending,
+    isSyncingSingle: inspectSingleMutation.isPending,
     scanSitemap: scanMutation.mutate,
     processStatus: processMutation.mutate,
+    inspectSingle: inspectSingleMutation.mutateAsync,
   }
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from "sonner"
 import * as React from "react"
 import { useSite } from "@/context/site-context"
 import { useInspection, type UrlAudit } from "@/hooks/use-inspection"
@@ -57,15 +58,73 @@ export default function InspectionClient() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }, [debouncedSearch])
 
+  const [isBatchSyncing, setIsBatchSyncing] = React.useState(false)
+  const [syncProgress, setSyncProgress] = React.useState({ current: 0, total: 0 })
+  const abortControllerRef = React.useRef<AbortController | null>(null)
+
   const { 
     urls, 
     recordCount,
     isLoading, 
     isScanning, 
-    isProcessing, 
-    scanSitemap, 
-    processStatus 
+    scanSitemap,
+    inspectSingle
   } = useInspection(activeSiteId, debouncedSearch, pagination.pageIndex)
+
+  const handleSyncStatus = async () => {
+    if (!activeSiteId) return
+    
+    try {
+        setIsBatchSyncing(true)
+        setSyncProgress({ current: 0, total: 0 })
+        
+        // 1. Get all pending URLs
+        const res = await fetch(`/api/sites/${activeSiteId}/inspect/pending`)
+        const { urls: pendingUrls } = await res.json()
+        
+        if (!pendingUrls?.length) {
+            toast.info("No pending URLs to sync.")
+            setIsBatchSyncing(false)
+            return
+        }
+
+        setSyncProgress({ current: 0, total: pendingUrls.length })
+        
+        // 2. Process one by one
+        for (let i = 0; i < pendingUrls.length; i++) {
+            if (abortControllerRef.current?.signal.aborted) break
+            
+            setSyncProgress(prev => ({ ...prev, current: i + 1 }))
+            
+            try {
+                await inspectSingle(pendingUrls[i])
+                // Small safety delay
+                await new Promise(resolve => setTimeout(resolve, 500))
+            } catch (err) {
+                console.error(`Failed to sync ${pendingUrls[i]}:`, err)
+            }
+        }
+
+        toast.success("Synchronization cycle completed.")
+    } catch (error: any) {
+        toast.error("Failed to start synchronization.")
+    } finally {
+        setIsBatchSyncing(false)
+        setSyncProgress({ current: 0, total: 0 })
+    }
+  }
+
+  const cancelSync = () => {
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
+    setIsBatchSyncing(false)
+    toast.info("Synchronization cancelled.")
+  }
+
+  React.useEffect(() => {
+    abortControllerRef.current = new AbortController()
+    return () => abortControllerRef.current?.abort()
+  }, [])
 
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -198,28 +257,58 @@ export default function InspectionClient() {
             </div>
             
             <div className="flex items-center gap-2">
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-9 gap-2 shadow-xs bg-background/50 border-primary/20 text-primary hover:bg-primary/5 font-semibold" 
-                    onClick={() => processStatus()}
-                    disabled={isProcessing || urls.length === 0}
-                >
-                    <RefreshCcw className={cn("size-3.5", isProcessing && "animate-spin")} />
-                    {isProcessing ? "Syncing GSC..." : "Sync Status"}
-                </Button>
+                {isBatchSyncing ? (
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-9 gap-2 shadow-xs bg-red-500/10 text-red-600 hover:bg-red-500/20 font-semibold border-red-500/20" 
+                        onClick={cancelSync}
+                    >
+                        <Loader2 className="size-3.5 animate-spin" />
+                        Stop Sync ({syncProgress.current}/{syncProgress.total})
+                    </Button>
+                ) : (
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-9 gap-2 shadow-xs bg-background/50 border-primary/20 text-primary hover:bg-primary/5 font-semibold" 
+                        onClick={handleSyncStatus}
+                        disabled={isLoading || recordCount === 0}
+                    >
+                        <RefreshCcw className="size-3.5" />
+                        Sync Status
+                    </Button>
+                )}
                 <Button 
                     variant="outline" 
                     size="sm" 
                     className="h-9 gap-2 shadow-xs bg-background/50 font-semibold" 
                     onClick={() => scanSitemap()}
-                    disabled={isScanning}
+                    disabled={isScanning || isBatchSyncing}
                 >
                     <FileText className={cn("size-3.5", isScanning && "animate-spin")} />
                     {isScanning ? "Scanning..." : "Scan Sitemap"}
                 </Button>
             </div>
         </div>
+
+        {isBatchSyncing && (
+            <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Loader2 className="size-4 text-primary animate-spin" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-primary">Synchronizing Inventory</p>
+                        <p className="text-[11px] text-primary/60">Processing Google Search Console data for your property...</p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm font-bold text-primary">{syncProgress.total > 0 ? Math.round((syncProgress.current / syncProgress.total) * 100) : 0}%</p>
+                    <p className="text-[10px] text-primary/60 uppercase tracking-wider font-bold">{syncProgress.current} of {syncProgress.total} URLs</p>
+                </div>
+            </div>
+        )}
 
         <DataGrid
             table={table}
