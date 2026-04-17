@@ -2,8 +2,7 @@ import type { Metadata } from "next"
 import { Geist_Mono, Outfit } from "next/font/google"
 
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { RootProvider } from "@/components/providers/root-provider"
 import { cn } from "@/lib/utils"
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" })
@@ -34,10 +33,6 @@ export const metadata: Metadata = {
   },
 }
 
-import { QueryProvider } from "@/components/providers/query-provider"
-import { SiteProvider } from "@/context/site-context"
-import { Toaster } from "sonner"
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -55,21 +50,9 @@ export default function RootLayout({
       )}
     >
       <body suppressHydrationWarning>
-        <ThemeProvider>
-          <TooltipProvider>
-            <QueryProvider>
-              <SiteProvider>
-                {children}
-                <Toaster
-                  position="bottom-right"
-                  theme="system"
-                  richColors
-                  closeButton
-                />
-              </SiteProvider>
-            </QueryProvider>
-          </TooltipProvider>
-        </ThemeProvider>
+        <RootProvider>
+          {children}
+        </RootProvider>
       </body>
     </html>
   )

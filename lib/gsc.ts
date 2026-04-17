@@ -62,16 +62,8 @@ export async function syncGscProperties(userId: string, gscAccountId: string) {
 
 	if (!gscAccount) throw new Error("GSC Account not found");
 
-	// Decrypt tokens before using them with Google API
-	const accessToken = decrypt(gscAccount.accessToken);
-	const refreshToken = decrypt(gscAccount.refreshToken);
-
-	oauth2Client.setCredentials({
-		access_token: accessToken,
-		refresh_token: refreshToken,
-	});
-
-	const searchconsole = google.searchconsole({ version: "v1", auth: oauth2Client });
+	const auth = getGscClient(gscAccount.accessToken, gscAccount.refreshToken);
+	const searchconsole = google.searchconsole({ version: "v1", auth });
 	const response = await searchconsole.sites.list();
 
 	const properties = response.data.siteEntry || [];
@@ -110,15 +102,8 @@ export async function syncSitePerformance(siteId: string, days: number = 30) {
 
 	if (!site || !site.gscAccount) throw new Error("Site or associated GSC account not found");
 
-	const accessToken = decrypt(site.gscAccount.accessToken);
-	const refreshToken = decrypt(site.gscAccount.refreshToken);
-
-	oauth2Client.setCredentials({
-		access_token: accessToken,
-		refresh_token: refreshToken,
-	});
-
-	const searchconsole = google.searchconsole({ version: "v1", auth: oauth2Client });
+	const auth = getGscClient(site.gscAccount.accessToken, site.gscAccount.refreshToken);
+	const searchconsole = google.searchconsole({ version: "v1", auth });
 
 	// GSC data usually has a 2-3 day lag. We fetch up to today, but expect results to be delayed.
 	const endDate = new Date().toISOString().split("T")[0];
@@ -169,15 +154,8 @@ export async function syncKeywordPerformance(siteId: string, days: number = 7) {
 
 	if (!site || !site.gscAccount) throw new Error("Site or associated GSC account not found");
 
-	const accessToken = decrypt(site.gscAccount.accessToken);
-	const refreshToken = decrypt(site.gscAccount.refreshToken);
-
-	oauth2Client.setCredentials({
-		access_token: accessToken,
-		refresh_token: refreshToken,
-	});
-
-	const searchconsole = google.searchconsole({ version: "v1", auth: oauth2Client });
+	const auth = getGscClient(site.gscAccount.accessToken, site.gscAccount.refreshToken);
+	const searchconsole = google.searchconsole({ version: "v1", auth });
 
 	const endDate = new Date().toISOString().split("T")[0];
 	const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -238,21 +216,20 @@ export async function inspectUrl(siteId: string, url: string) {
 	const accessToken = decrypt(site.gscAccount.accessToken);
 	const refreshToken = decrypt(site.gscAccount.refreshToken);
 
-	oauth2Client.setCredentials({
-		access_token: accessToken,
-		refresh_token: refreshToken,
-	});
-
-	const searchconsole = google.searchconsole({ version: "v1", auth: oauth2Client });
+	const auth = getGscClient(site.gscAccount.accessToken, site.gscAccount.refreshToken)
+	const searchconsole = google.searchconsole({ version: "v1", auth });
 
 	// Use the URL Inspection API to get real-time indexing data from Google
+    // GSC is strict: URL-prefix sites must include protocol and trailing slash.
+    let siteUrl = site.domain;
+    if (!siteUrl.startsWith("sc-domain:") && !siteUrl.startsWith("http")) {
+        siteUrl = `https://${siteUrl}/`;
+    }
+
 	const res = await searchconsole.urlInspection.index.inspect({
 		requestBody: {
-			// Ensure inspectionUrl is always a valid fully qualified URL
-			inspectionUrl: url.startsWith("sc-domain:") 
-                ? `https://${url.replace("sc-domain:", "")}/` 
-                : url,
-			siteUrl: site.domain,
+			inspectionUrl: url,
+			siteUrl: siteUrl,
 		},
 	});
 
@@ -261,12 +238,13 @@ export async function inspectUrl(siteId: string, url: string) {
 
 	const indexStatus = result.indexStatusResult;
 
-	// Upsert the audit result
+	// Upsert the audit result using the siteId_url unique constraint
 	return prisma.urlAudit.upsert({
 		where: {
-			// Note: ensure we have a unique constraint or use a composite find logic.
-			// Currently using find-then-update logic for safety if unique is missing.
-			id: `audit-${siteId}-${Buffer.from(url).toString("base64")}` 
+			siteId_url: {
+                siteId: siteId,
+                url: url
+            }
 		},
 		update: {
 			inspectionStatus: indexStatus?.verdict || "UNKNOWN",
@@ -275,7 +253,6 @@ export async function inspectUrl(siteId: string, url: string) {
 			sitemap: indexStatus?.sitemap?.join(", ") || null,
 		},
 		create: {
-			id: `audit-${siteId}-${Buffer.from(url).toString("base64")}`,
 			siteId,
 			url,
 			inspectionStatus: indexStatus?.verdict || "UNKNOWN",

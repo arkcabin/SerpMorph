@@ -21,7 +21,11 @@ import { useDashboardSummary } from "@/hooks/use-dashboard"
 import { useSite } from "@/context/site-context"
 import { formatGscDomain } from "@/lib/utils"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
+
+interface ProjectItem {
+  id: string
+  domain: string
+}
 
 export function ProjectSwitcher() {
   const { isMobile } = useSidebar()
@@ -34,8 +38,8 @@ export function ProjectSwitcher() {
   }, [])
 
   const { data, isLoading } = useDashboardSummary(activeSiteId)
-  const projects = data?.sites || []
-  const activeProject = projects.find((p: any) => p.id === activeSiteId) || projects[0]
+  const projects = (data?.sites || []) as ProjectItem[]
+  const activeProject = projects.find((p: ProjectItem) => p.id === activeSiteId) || projects[0]
 
   const syncMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -76,6 +80,7 @@ export function ProjectSwitcher() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-border/40 shadow-xs transition-all hover:border-primary/20 bg-sidebar/50"
             >
               <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-primary/5 text-primary">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${formatGscDomain(activeProject?.domain)}&size=64`}
                   alt=""
@@ -106,7 +111,7 @@ export function ProjectSwitcher() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="mx-1 my-1" />
             <div className="max-h-[300px] overflow-y-auto px-1">
-              {projects.map((project: any) => {
+              {projects.map((project: ProjectItem) => {
                 const domain = formatGscDomain(project.domain)
                 return (
                     <DropdownMenuItem
@@ -115,6 +120,7 @@ export function ProjectSwitcher() {
                     className="flex items-center gap-2.5 rounded-lg p-1.5 focus:bg-primary/5 focus:text-primary-foreground group"
                     >
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/40 bg-background group-focus:border-primary/20 shadow-xs transition-colors">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                         src={`https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=64`}
                         alt=""
