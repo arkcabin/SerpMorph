@@ -9,9 +9,9 @@ import { Toaster } from "sonner"
 
 export function RootProvider({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
-      <TooltipProvider>
-        <QueryProvider>
+    <QueryProvider>
+      <ThemeProvider>
+        <TooltipProvider>
           <SiteProvider>
             {children}
             <Toaster
@@ -21,8 +21,8 @@ export function RootProvider({ children }: { children: React.ReactNode }) {
               closeButton
             />
           </SiteProvider>
-        </QueryProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryProvider>
   )
 }
