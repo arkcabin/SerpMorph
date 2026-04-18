@@ -24,7 +24,18 @@ import {
   AlertCircle,
   Rocket,
   Zap,
+  X,
+  Check,
 } from "lucide-react"
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,6 +79,11 @@ export default function InspectionClient() {
     total: 0,
   })
   const [syncingUrls, setSyncingUrls] = React.useState<Set<string>>(new Set())
+  const [indexingUrls, setIndexingUrls] = React.useState<Set<string>>(new Set())
+  const [isBulkDrawerOpen, setIsBulkDrawerOpen] = React.useState(false)
+  const [eligibleUrls, setEligibleUrls] = React.useState<UrlAudit[]>([])
+  const [isLoadingEligible, setIsLoadingEligible] = React.useState(false)
+  const [selectedUrls, setSelectedUrls] = React.useState<Set<string>>(new Set())
   const abortControllerRef = React.useRef<AbortController | null>(null)
 
   const {
@@ -149,6 +165,48 @@ export default function InspectionClient() {
     return () => abortControllerRef.current?.abort()
   }, [])
 
+  const fetchEligibleUrls = async () => {
+    if (!activeSiteId) return
+    try {
+      setIsLoadingEligible(true)
+      const res = await fetch(`/api/sites/${activeSiteId}/inspect/eligible`)
+      const data = await res.json()
+      setEligibleUrls(data.urls || [])
+    } catch {
+      toast.error("Failed to fetch eligible URLs")
+    } finally {
+      setIsLoadingEligible(false)
+    }
+  }
+
+  const toggleUrlSelection = (url: string) => {
+    setSelectedUrls((prev) => {
+      const next = new Set(prev)
+      if (next.has(url)) {
+        next.delete(url)
+      } else {
+        if (next.size >= 50) {
+          toast.warning("Google allows max 50 batch requests at once.")
+          return prev
+        }
+        next.add(url)
+      }
+      return next
+    })
+  }
+
+  const handleBulkPush = async () => {
+    if (selectedUrls.size === 0) return
+    try {
+      const urlsToPush = Array.from(selectedUrls)
+      await pushIndexing({ urls: urlsToPush })
+      setIsBulkDrawerOpen(false)
+      setSelectedUrls(new Set())
+    } catch {
+      // Handled in hook
+    }
+  }
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -193,85 +251,132 @@ export default function InspectionClient() {
       {
         accessorKey: "inspectionStatus",
         header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Status" />
+          <DataGridColumnHeader
+            column={column}
+            title="Status"
+            className="justify-end px-0"
+          />
         ),
         cell: ({ row }) => {
           const status = row.getValue("inspectionStatus") as string
 
-          if (status === "PASS" || status === "Indexed") {
-            return (
-              <Badge
-                variant="default"
-                className="h-4.5 border-emerald-500/10 bg-emerald-500/5 px-1.5 py-0 text-[9px] font-black tracking-widest text-emerald-600 uppercase"
-              >
-                <CheckCircle2 className="mr-1 size-2.5" />
-                Indexed
-              </Badge>
-            )
-          }
-          if (status === "FAIL") {
-            return (
-              <Badge
-                variant="destructive"
-                className="h-4.5 border-red-500/10 bg-red-500/5 px-1.5 py-0 text-[9px] font-black tracking-widest text-red-600 uppercase"
-              >
-                <AlertCircle className="mr-1 size-2.5" />
-                Issues Found
-              </Badge>
-            )
-          }
-          if (
-            status === "NEUTRAL" ||
-            status === "PARTIAL" ||
-            status === "Excluded"
-          ) {
+          const baseClass =
+            "h-3 border-transparent px-1 py-0 text-[8px] font-bold tracking-wider uppercase rounded-[2px]"
+
+          const renderBadge = () => {
+            if (status === "PASS" || status === "Indexed") {
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    baseClass,
+                    "border-emerald-500/10 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10"
+                  )}
+                >
+                  <CheckCircle2 className="mr-1 size-2" />
+                  Indexed
+                </Badge>
+              )
+            }
+            if (status === "Submitted") {
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    baseClass,
+                    "border-indigo-500/10 bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/10"
+                  )}
+                >
+                  <Zap className="mr-1 size-2" />
+                  Requested
+                </Badge>
+              )
+            }
+            if (status === "FAIL") {
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    baseClass,
+                    "border-red-500/10 bg-red-500/10 text-red-600 hover:bg-red-500/10"
+                  )}
+                >
+                  <AlertCircle className="mr-1 size-2" />
+                  Error
+                </Badge>
+              )
+            }
+            if (
+              status === "NEUTRAL" ||
+              status === "PARTIAL" ||
+              status === "Excluded"
+            ) {
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    baseClass,
+                    "border-amber-500/10 bg-amber-500/10 text-amber-600 hover:bg-amber-500/10"
+                  )}
+                >
+                  Excluded
+                </Badge>
+              )
+            }
+
+            const isSyncing = syncingUrls.has(row.original.url)
+            const isIndexing = indexingUrls.has(row.original.url)
+
+            if (isSyncing || isIndexing) {
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    baseClass,
+                    "animate-pulse border-primary/10 bg-primary/10 text-primary hover:bg-primary/10"
+                  )}
+                >
+                  <Loader2 className="mr-1 size-2 animate-spin" />
+                  {isIndexing ? "Pushing" : "Syncing"}
+                </Badge>
+              )
+            }
+
             return (
               <Badge
                 variant="outline"
-                className="h-4.5 border-amber-500/10 bg-amber-500/5 px-1.5 py-0 text-[9px] font-black tracking-widest text-amber-600 uppercase"
+                className={cn(
+                  baseClass,
+                  "border-muted/10 bg-muted/10 text-muted-foreground/60 hover:bg-muted/10"
+                )}
               >
-                Excluded
+                <div className="mr-1 size-1 rounded-full bg-muted-foreground/30" />
+                Pending
               </Badge>
             )
           }
 
-          const isSyncing = syncingUrls.has(row.original.url)
-
-          if (isSyncing) {
-            return (
-              <Badge
-                variant="secondary"
-                className="h-4.5 animate-pulse border-primary/10 bg-primary/5 px-1.5 py-0 text-[9px] font-black tracking-widest text-primary uppercase"
-              >
-                <Loader2 className="mr-1 size-2.5 animate-spin" />
-                Syncing
-              </Badge>
-            )
-          }
-
-          return (
-            <Badge
-              variant="secondary"
-              className="h-4.5 border-transparent bg-muted/30 px-1.5 py-0 text-[9px] font-bold tracking-widest text-muted-foreground/70 uppercase"
-            >
-              <div className="mr-1.5 size-1.5 rounded-full bg-muted-foreground/30" />
-              Pending
-            </Badge>
-          )
+          return <div className="flex justify-end">{renderBadge()}</div>
         },
         size: 120,
       },
       {
         accessorKey: "updatedAt",
         header: ({ column }) => (
-          <DataGridColumnHeader column={column} title="Discovered" />
+          <DataGridColumnHeader
+            column={column}
+            title="Discovered"
+            className="justify-end px-0"
+          />
         ),
         cell: ({ row }) => {
           const date = new Date(row.getValue("updatedAt"))
           return (
-            <span className="text-muted-foreground/60">
-              {date.toLocaleDateString()}
-            </span>
+            <div className="text-right">
+              <span className="text-[10px] font-medium text-muted-foreground/40 tabular-nums">
+                {date.toLocaleDateString()}
+              </span>
+            </div>
           )
         },
         size: 120,
@@ -281,6 +386,7 @@ export default function InspectionClient() {
         cell: ({ row }) => {
           const url = row.original.url
           const isSyncing = syncingUrls.has(url)
+          const isIndexing = indexingUrls.has(url)
 
           const handleSingleSync = async () => {
             if (isSyncing) return
@@ -305,14 +411,14 @@ export default function InspectionClient() {
           }
 
           const handleSinglePush = async () => {
-            if (isSyncing) return
+            if (isIndexing) return
             try {
-              setSyncingUrls((prev) => new Set(prev).add(url))
+              setIndexingUrls((prev) => new Set(prev).add(url))
               await pushIndexing({ url })
             } catch {
               // Toast handled in hook
             } finally {
-              setSyncingUrls((prev) => {
+              setIndexingUrls((prev) => {
                 const next = new Set(prev)
                 next.delete(url)
                 return next
@@ -328,14 +434,14 @@ export default function InspectionClient() {
                 title="Push to Index"
                 className={cn(
                   "size-7 transition-colors",
-                  isSyncing
+                  isIndexing
                     ? "text-primary"
                     : "text-amber-500 hover:text-amber-600"
                 )}
                 onClick={handleSinglePush}
-                disabled={isSyncing}
+                disabled={isIndexing || isSyncing}
               >
-                <Zap className={cn("size-3.5", isSyncing && "animate-spin")} />
+                <Zap className={cn("size-3.5", isIndexing && "animate-spin")} />
               </Button>
               <Button
                 variant="ghost"
@@ -348,7 +454,7 @@ export default function InspectionClient() {
                     : "text-muted-foreground hover:text-primary"
                 )}
                 onClick={handleSingleSync}
-                disabled={isSyncing}
+                disabled={isSyncing || isIndexing}
               >
                 <RefreshCcw
                   className={cn("size-3.5", isSyncing && "animate-spin")}
@@ -370,7 +476,14 @@ export default function InspectionClient() {
         size: 100,
       },
     ],
-    [syncingUrls, activeSiteId, inspectSingle, queryClient, pushIndexing]
+    [
+      syncingUrls,
+      indexingUrls,
+      activeSiteId,
+      inspectSingle,
+      queryClient,
+      pushIndexing,
+    ]
   )
 
   const table = useReactTable({
@@ -388,6 +501,50 @@ export default function InspectionClient() {
     getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(recordCount / pagination.pageSize),
+  })
+
+  // Table for eligible URLs in the sidebar
+  const eligibleTable = useReactTable({
+    data: eligibleUrls,
+    columns: React.useMemo<ColumnDef<UrlAudit>[]>(
+      () => [
+        {
+          id: "select",
+          header: () => (
+            <div className="flex justify-center">
+              <Checkbox
+                checked={
+                  selectedUrls.size === Math.min(eligibleUrls.length, 50) &&
+                  eligibleUrls.length > 0
+                }
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    const next = new Set<string>()
+                    eligibleUrls.slice(0, 50).forEach((u) => next.add(u.url))
+                    setSelectedUrls(next)
+                  } else {
+                    setSelectedUrls(new Set())
+                  }
+                }}
+              />
+            </div>
+          ),
+          cell: ({ row }) => (
+            <div className="flex justify-center">
+              <Checkbox
+                checked={selectedUrls.has(row.original.url)}
+                onCheckedChange={() => toggleUrlSelection(row.original.url)}
+              />
+            </div>
+          ),
+          size: 40,
+        },
+        ...columns.filter((c) => c.id !== "actions"),
+      ],
+      [eligibleUrls, selectedUrls, columns]
+    ),
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
   })
 
   if (!activeSiteId) {
@@ -456,17 +613,10 @@ export default function InspectionClient() {
             size="lg"
             className="font-semibold"
             onClick={() => {
-              const pendingUrls = urls
-                .filter((u) => u.inspectionStatus === "Pending")
-                .map((u) => u.url)
-              if (pendingUrls.length > 0) pushIndexing({ urls: pendingUrls })
+              fetchEligibleUrls()
+              setIsBulkDrawerOpen(true)
             }}
-            disabled={
-              isPushing ||
-              isBatchSyncing ||
-              recordCount === 0 ||
-              !urls.some((u) => u.inspectionStatus === "Pending")
-            }
+            disabled={isPushing || isBatchSyncing || recordCount === 0}
           >
             <Rocket className={cn("size-3.5", isPushing && "animate-pulse")} />
             Push to Index
@@ -540,6 +690,103 @@ export default function InspectionClient() {
           Discovery Inventory • {recordCount} URLs located across your sitemap
         </p>
       </div>
+
+      <Sheet open={isBulkDrawerOpen} onOpenChange={setIsBulkDrawerOpen}>
+        <SheetContent
+          side="right"
+          className="w-full border-l border-border/50 p-0 sm:w-1/2 data-[side=right]:sm:max-w-none"
+        >
+          <div className="flex h-full flex-col bg-background">
+            <SheetHeader className="flex flex-col justify-between gap-4 space-y-0 border-b border-border/50 px-6 py-4 sm:flex-row sm:items-center">
+              <div className="space-y-1">
+                <SheetTitle className="flex items-center gap-2 text-[15px] font-bold whitespace-nowrap">
+                  <Rocket className="size-4 text-amber-500" />
+                  Bulk Indexing Inventory
+                </SheetTitle>
+                <SheetDescription className="text-[10px] font-bold tracking-widest text-muted-foreground/40 uppercase">
+                  Select URLs to manually push to Google Search Console indexing
+                  queue
+                </SheetDescription>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 rounded-full border border-border/50 bg-muted/20 px-3 py-1.5">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Selection
+                  </span>
+                  <div className="h-3 w-px bg-border" />
+                  <span
+                    className={cn(
+                      "text-xs font-black tabular-nums",
+                      selectedUrls.size > 0
+                        ? "text-primary"
+                        : "text-muted-foreground/50"
+                    )}
+                  >
+                    {selectedUrls.size} / 50
+                  </span>
+                  {selectedUrls.size > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-4 hover:bg-transparent"
+                      onClick={() => setSelectedUrls(new Set())}
+                    >
+                      <X className="size-3 text-red-500" />
+                    </Button>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="accent"
+                  className="h-8 px-4 font-bold"
+                  disabled={selectedUrls.size === 0 || isPushing}
+                  onClick={handleBulkPush}
+                >
+                  {isPushing ? (
+                    <Loader2 className="mr-2 size-3 animate-spin" />
+                  ) : (
+                    <Zap className="mr-2 size-3" />
+                  )}
+                  {isPushing ? "Pushing..." : `Push ${selectedUrls.size} URLs`}
+                </Button>
+              </div>
+            </SheetHeader>
+
+            <div className="relative flex h-full min-h-0 flex-1 flex-col">
+              <DataGrid
+                className="h-full min-h-0 flex-1 gap-0"
+                table={eligibleTable}
+                recordCount={eligibleUrls.length}
+                isLoading={isLoadingEligible}
+                loadingMode="skeleton"
+                tableLayout={{
+                  dense: true,
+                  headerBackground: true,
+                  rowBorder: true,
+                }}
+              >
+                <DataGridContainer className="h-full min-h-0 flex-1 !overflow-auto overflow-x-hidden overflow-y-auto">
+                  <DataGridTable />
+                </DataGridContainer>
+              </DataGrid>
+
+              {!isLoadingEligible && eligibleUrls.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
+                  <div className="space-y-2 text-center">
+                    <div className="inline-flex size-10 items-center justify-center rounded-full bg-muted/10">
+                      <Check className="size-5 text-emerald-500" />
+                    </div>
+                    <p className="text-xs font-bold tracking-widest text-muted-foreground/50 uppercase">
+                      Everything is indexed
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

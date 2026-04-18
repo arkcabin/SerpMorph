@@ -14,8 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface DataGridColumnHeaderProps<TData, TValue>
-  extends React.HTMLAttributes<HTMLDivElement> {
+interface DataGridColumnHeaderProps<
+  TData,
+  TValue,
+> extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>
   title: string
 }
@@ -36,19 +38,22 @@ export function DataGridColumnHeader<TData, TValue>({
           <Button
             variant="ghost"
             size="sm"
-            className="-ml-3 h-8 data-[state=open]:bg-accent text-[11px] font-black uppercase tracking-widest hover:text-foreground"
+            className="-ml-3 h-7 text-[10px] font-medium tracking-normal text-muted-foreground/50 transition-all hover:text-foreground data-[state=open]:bg-accent"
           >
             <span>{title}</span>
             {column.getIsSorted() === "desc" ? (
-              <ArrowDown className="ml-2 h-4 w-4" />
+              <ArrowDown className="ml-1.5 size-3 opacity-50" />
             ) : column.getIsSorted() === "asc" ? (
-              <ArrowUp className="ml-2 h-4 w-4" />
+              <ArrowUp className="ml-1.5 size-3 opacity-50" />
             ) : (
-              <ChevronsUpDown className="ml-2 h-4 w-4" />
+              <ChevronsUpDown className="ml-1.5 size-3 opacity-30" />
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-background/95 backdrop-blur-sm border-border/50">
+        <DropdownMenuContent
+          align="start"
+          className="w-48 border-border/50 bg-background/95 backdrop-blur-sm"
+        >
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <ArrowUp className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
             Asc

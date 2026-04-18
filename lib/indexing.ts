@@ -22,7 +22,18 @@ export async function publishIndexingRequest(
   keyId?: string
 ): Promise<IndexingResult> {
   try {
-    // 1. Decrypt and parse Service Account data
+    // 1. Handle missing key with a dev mock
+    if (!serviceAccountJson && process.env.NODE_ENV === "development") {
+      console.log(`[MOCK_INDEXING]: Success for ${url}`)
+      await trackIndexingUsage(siteId)
+      return {
+        url,
+        type: "URL_UPDATED",
+        notifyTime: new Date().toISOString(),
+      }
+    }
+
+    // 2. Decrypt and parse Service Account data
     const credentials = JSON.parse(decrypt(serviceAccountJson))
 
     // 2. Initialize Auth

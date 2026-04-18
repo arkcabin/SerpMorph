@@ -35,15 +35,11 @@ export async function POST(
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
-    if (!site.indexingKey) {
-      return NextResponse.json(
-        {
-          error:
-            "No Indexing Key (Service Account) configured for this site. Please upload a JSON key in settings.",
-        },
-        { status: 400 }
-      )
-    }
+    const serviceAccountJson =
+      site.indexingKey?.serviceAccountJson ||
+      process.env.MASTER_INDEXING_SERVICE_ACCOUNT ||
+      ""
+    const keyId = site.indexingKey?.id
 
     // 3. Process URLs one-by-one (Bulk support)
     const results = []
@@ -54,10 +50,16 @@ export async function POST(
         const result = await publishIndexingRequest(
           id,
           targetUrl,
-          site.indexingKey.serviceAccountJson,
-          site.indexingKey.id
+          serviceAccountJson,
+          keyId
         )
         results.push(result)
+
+        // Update DB status to 'Submitted'
+        await prisma.urlAudit.updateMany({
+          where: { siteId: id, url: targetUrl },
+          data: { inspectionStatus: "Submitted", updatedAt: new Date() },
+        })
 
         // Artificial delay to respect rate limits if bulk
         if (urlsToPush.length > 1) {
