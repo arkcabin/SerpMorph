@@ -96,40 +96,6 @@ const dataSidebar = {
       url: "/console/inspection",
       icon: <Rocket />,
     },
-    {
-      title: "Keywords",
-      url: "/keywords",
-      icon: <Hash />,
-      items: [
-        {
-          title: "Rank Tracker",
-          url: "/keywords/tracker",
-        },
-        {
-          title: "Keyword Research",
-          url: "/keywords/research",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: <Settings2 />,
-      items: [
-        {
-          title: "General",
-          url: "/settings/general",
-        },
-        {
-          title: "Team",
-          url: "/settings/team",
-        },
-        {
-          title: "Billing",
-          url: "/settings/billing",
-        },
-      ],
-    },
   ],
 }
 
