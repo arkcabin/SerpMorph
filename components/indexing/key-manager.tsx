@@ -53,8 +53,8 @@ export function KeyManager({ siteId }: KeyManagerProps) {
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
-          className="h-9 gap-2 border-border/50 bg-background/50 font-semibold shadow-xs"
+          size="lg"
+          className="bg-background/50 font-semibold shadow-xs"
         >
           <Settings2 className="size-3.5" />
           Configure Indexing
