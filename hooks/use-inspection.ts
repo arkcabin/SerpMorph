@@ -12,7 +12,11 @@ export interface UrlAudit {
   updatedAt: string
 }
 
-export function useInspection(siteId?: string | null, search: string = "", page: number = 0) {
+export function useInspection(
+  siteId?: string | null,
+  search: string = "",
+  page: number = 0
+) {
   const queryClient = useQueryClient()
   const pageSize = 10
 
@@ -21,9 +25,17 @@ export function useInspection(siteId?: string | null, search: string = "", page:
     queryFn: async () => {
       if (!siteId) return { data: [], total: 0, limit: pageSize, offset: 0 }
       const offset = page * pageSize
-      const res = await fetch(`/api/sites/${siteId}/inspect?offset=${offset}&limit=${pageSize}&search=${encodeURIComponent(search)}`)
+      const res = await fetch(
+        `/api/sites/${siteId}/inspect?offset=${offset}&limit=${pageSize}&search=${encodeURIComponent(search)}`
+      )
       if (!res.ok) throw new Error("Failed to fetch URLs")
-      return res.json() as Promise<{ data: UrlAudit[], total: number, limit: number, offset: number }>
+      return res.json() as Promise<{
+        data: UrlAudit[]
+        total: number
+        limit: number
+        offset: number
+        quotaUsage: number
+      }>
     },
     enabled: !!siteId,
   })
@@ -34,10 +46,12 @@ export function useInspection(siteId?: string | null, search: string = "", page:
   const scanMutation = useMutation({
     mutationFn: async () => {
       if (!siteId) throw new Error("No site selected")
-      const res = await fetch(`/api/sites/${siteId}/inspect`, { method: "POST" })
+      const res = await fetch(`/api/sites/${siteId}/inspect`, {
+        method: "POST",
+      })
       if (!res.ok) {
-          const error = await res.json()
-          throw new Error(error.error || "Scan failed")
+        const error = await res.json()
+        throw new Error(error.error || "Scan failed")
       }
       return res.json()
     },
@@ -45,7 +59,7 @@ export function useInspection(siteId?: string | null, search: string = "", page:
       toast.success(data.message || "Sitemap scan completed")
       queryClient.invalidateQueries({ queryKey: ["inspection", siteId] })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || "Failed to scan sitemap")
     },
   })
@@ -53,10 +67,12 @@ export function useInspection(siteId?: string | null, search: string = "", page:
   const processMutation = useMutation({
     mutationFn: async () => {
       if (!siteId) throw new Error("No site selected")
-      const res = await fetch(`/api/sites/${siteId}/inspect/process`, { method: "POST" })
+      const res = await fetch(`/api/sites/${siteId}/inspect/process`, {
+        method: "POST",
+      })
       if (!res.ok) {
-          const error = await res.json()
-          throw new Error(error.error || "Processing failed")
+        const error = await res.json()
+        throw new Error(error.error || "Processing failed")
       }
       return res.json()
     },
@@ -64,15 +80,18 @@ export function useInspection(siteId?: string | null, search: string = "", page:
       if (data.count === 0) {
         toast.info("All URLs are already up to date.")
       } else if (data.errorCount > 0) {
-        toast.error(`${data.message} ${data.firstError ? `Reason: ${data.firstError}` : ""}`, {
-            duration: 5000
-        })
+        toast.error(
+          `${data.message} ${data.firstError ? `Reason: ${data.firstError}` : ""}`,
+          {
+            duration: 5000,
+          }
+        )
       } else {
         toast.success(data.message || "Batch inspection completed")
       }
       queryClient.invalidateQueries({ queryKey: ["inspection", siteId] })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || "Failed to process index status")
     },
   })
@@ -81,32 +100,57 @@ export function useInspection(siteId?: string | null, search: string = "", page:
     mutationFn: async (url: string) => {
       if (!siteId) throw new Error("No site selected")
       const res = await fetch(`/api/sites/${siteId}/inspect/single`, {
-          method: "POST",
-          body: JSON.stringify({ url })
+        method: "POST",
+        body: JSON.stringify({ url }),
       })
       if (!res.ok) {
-          const error = await res.json()
-          throw new Error(error.error || "Inspection failed")
+        const error = await res.json()
+        throw new Error(error.error || "Inspection failed")
       }
       return res.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inspection", siteId] })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || "Failed to inspect URL")
+    },
+  })
+
+  const pushIndexingMutation = useMutation({
+    mutationFn: async ({ url, urls }: { url?: string; urls?: string[] }) => {
+      if (!siteId) throw new Error("No site selected")
+      const res = await fetch(`/api/sites/${siteId}/indexing/push`, {
+        method: "POST",
+        body: JSON.stringify({ url, urls }),
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Push failed")
+      }
+      return res.json()
+    },
+    onSuccess: (data) => {
+      toast.success(`Requested indexing for ${data.successCount} URL(s)`)
+      queryClient.invalidateQueries({ queryKey: ["inspection", siteId] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to push to Indexing API")
     },
   })
 
   return {
     urls,
     recordCount,
+    quotaUsage: query.data?.quotaUsage || 0,
     isLoading: query.isLoading,
     isScanning: scanMutation.isPending,
     isProcessing: processMutation.isPending,
     isSyncingSingle: inspectSingleMutation.isPending,
+    isPushing: pushIndexingMutation.isPending,
     scanSitemap: scanMutation.mutate,
     processStatus: processMutation.mutate,
     inspectSingle: inspectSingleMutation.mutateAsync,
+    pushIndexing: pushIndexingMutation.mutateAsync,
   }
 }

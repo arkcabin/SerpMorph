@@ -3,27 +3,22 @@
 import * as React from "react"
 import {
   LayoutDashboard,
-  Search,
   ShieldCheck,
   Hash,
-  Globe,
   Settings2,
-  History,
   Plus,
   BarChart3,
-  FileSearch,
   Command,
   AudioWaveform,
-  GalleryVerticalEnd,
+  Rocket,
 } from "lucide-react"
 
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import { ProjectSwitcher } from "@/components/project-switcher"
-import { useDashboardSummary } from "@/hooks/use-dashboard"
-import { formatGscDomain, isDomainProperty } from "@/lib/utils"
 import {
   Sidebar,
   SidebarContent,
@@ -75,7 +70,6 @@ const dataSidebar = {
       title: "Dashboard",
       url: "/dashboard",
       icon: <LayoutDashboard />,
-      isActive: true,
     },
     {
       title: "SEO Audits",
@@ -93,19 +87,14 @@ const dataSidebar = {
       ],
     },
     {
-      title: "Search Console",
-      url: "/console",
-      icon: <Search />,
-      items: [
-        {
-          title: "Performance",
-          url: "/console/performance",
-        },
-        {
-          title: "URL Inspection",
-          url: "/console/inspection",
-        },
-      ],
+      title: "Performance",
+      url: "/console/performance",
+      icon: <BarChart3 />,
+    },
+    {
+      title: "Instant Indexing",
+      url: "/console/inspection",
+      icon: <Rocket />,
     },
     {
       title: "Keywords",
@@ -146,6 +135,18 @@ const dataSidebar = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { toggleSidebar } = useSidebar()
+  const pathname = usePathname()
+
+  // Dynamic nav items based on current path
+  const navMain = dataSidebar.navMain.map((item) => ({
+    ...item,
+    isActive:
+      pathname === item.url || item.items?.some((sub) => pathname === sub.url),
+    items: item.items?.map((sub) => ({
+      ...sub,
+      isActive: pathname === sub.url,
+    })),
+  }))
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
@@ -154,7 +155,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <ProjectSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={dataSidebar.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <div className="flex items-center justify-between px-1 py-1 group-data-[collapsible=icon]:justify-center">
@@ -164,10 +165,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden h-8 w-8 md:flex"
+            className="hidden h-8 w-8 text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary md:flex"
             onClick={toggleSidebar}
           >
-            <PanelLeft className="size-4 text-muted-foreground" />
+            <PanelLeft className="size-4" />
           </Button>
         </div>
       </SidebarFooter>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { getServerAuthSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { inspectUrl } from "@/lib/gsc"
 
@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth()
+    const session = await getServerAuthSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -22,11 +22,11 @@ export async function POST(
 
     // Verify site ownership
     const site = await prisma.site.findFirst({
-        where: { id, userId: session.user.id }
+      where: { id, userId: session.user.id },
     })
 
     if (!site) {
-        return NextResponse.json({ error: "Site not found" }, { status: 404 })
+      return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
     // Perform inspection
@@ -34,23 +34,25 @@ export async function POST(
 
     // Update database
     await prisma.urlAudit.update({
-        where: { 
-            siteId_url: { siteId: id, url: result.url } 
-        },
-        data: {
-            inspectionStatus: result.inspectionStatus,
-            lastCrawlTime: result.lastCrawlTime,
-            isMobileFriendly: result.isMobileFriendly,
-            updatedAt: new Date()
-        }
+      where: {
+        siteId_url: { siteId: id, url: result.url },
+      },
+      data: {
+        inspectionStatus: result.inspectionStatus,
+        lastCrawlTime: result.lastCrawlTime,
+        isMobileFriendly: result.isMobileFriendly,
+        updatedAt: new Date(),
+      },
     })
 
-    return NextResponse.json({ message: "URL inspected successfully", data: result })
-  } catch (error: any) {
+    return NextResponse.json({
+      message: "URL inspected successfully",
+      data: result,
+    })
+  } catch (error: unknown) {
     console.error(`[INSPECT_SINGLE_ERROR]:`, error)
-    return NextResponse.json(
-        { error: error.message || "Failed to inspect URL" }, 
-        { status: 500 }
-    )
+    const message =
+      error instanceof Error ? error.message : "Failed to inspect URL"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
