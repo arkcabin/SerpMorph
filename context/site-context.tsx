@@ -7,10 +7,15 @@ interface SiteContextType {
   setActiveSiteId: (id: string | null) => void
 }
 
-const SiteContext = React.createContext<SiteContextType | undefined>(undefined)
+const SiteContext = React.createContext<SiteContextType>({
+  activeSiteId: null,
+  setActiveSiteId: () => {},
+})
 
 export function SiteProvider({ children }: { children: React.ReactNode }) {
-  const [activeSiteId, setActiveSiteIdState] = React.useState<string | null>(null)
+  const [activeSiteId, setActiveSiteIdState] = React.useState<string | null>(
+    null
+  )
 
   // Initialize from localStorage on mount
   React.useEffect(() => {
@@ -37,9 +42,5 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useSite() {
-  const context = React.useContext(SiteContext)
-  if (context === undefined) {
-    throw new Error("useSite must be used within a SiteProvider")
-  }
-  return context
+  return React.useContext(SiteContext)
 }
