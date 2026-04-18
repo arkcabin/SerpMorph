@@ -38,6 +38,7 @@ import {
 } from "@/components/reui/data-grid"
 import { cn } from "@/lib/utils"
 import { KeyManager } from "@/components/indexing/key-manager"
+import { useIndexingKeys } from "@/hooks/use-indexing-keys"
 
 export default function InspectionClient() {
   const { activeSiteId } = useSite()
@@ -82,6 +83,9 @@ export default function InspectionClient() {
     inspectSingle,
     pushIndexing,
   } = useInspection(activeSiteId, debouncedSearch, pagination.pageIndex)
+
+  const { key: indexingKey, isLoading: isKeyLoading } =
+    useIndexingKeys(activeSiteId)
 
   const handleSyncStatus = async () => {
     if (!activeSiteId) return
@@ -306,7 +310,7 @@ export default function InspectionClient() {
           }
 
           const handleSinglePush = async () => {
-            if (isSyncing) return
+            if (isSyncing || !indexingKey) return
             try {
               setSyncingUrls((prev) => new Set(prev).add(url))
               await pushIndexing({ url })
@@ -334,7 +338,7 @@ export default function InspectionClient() {
                     : "text-amber-500 hover:text-amber-600"
                 )}
                 onClick={handleSinglePush}
-                disabled={isSyncing}
+                disabled={isSyncing || !indexingKey}
               >
                 <Zap className={cn("size-3.5", isSyncing && "animate-spin")} />
               </Button>
@@ -371,7 +375,14 @@ export default function InspectionClient() {
         size: 100,
       },
     ],
-    [syncingUrls, activeSiteId, inspectSingle, queryClient, pushIndexing]
+    [
+      syncingUrls,
+      activeSiteId,
+      inspectSingle,
+      queryClient,
+      pushIndexing,
+      indexingKey,
+    ]
   )
 
   const table = useReactTable({
@@ -429,6 +440,13 @@ export default function InspectionClient() {
             </span>
           </div>
 
+          {!isKeyLoading && !indexingKey && (
+            <div className="flex h-9 animate-pulse items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/5 px-3 text-[10px] font-bold tracking-wider text-red-600 uppercase">
+              <AlertCircle className="size-3.5" />
+              Key Required
+            </div>
+          )}
+
           {isBatchSyncing ? (
             <Button
               variant="outline"
@@ -456,14 +474,19 @@ export default function InspectionClient() {
             variant="outline"
             size="sm"
             className="h-9 gap-2 border-amber-500/20 bg-background/50 font-semibold text-amber-600 shadow-xs hover:bg-amber-500/5"
-            onClick={() =>
-              pushIndexing({
-                urls: urls
-                  .filter((u) => u.inspectionStatus === "Pending")
-                  .map((u) => u.url),
-              })
+            onClick={() => {
+              const pendingUrls = urls
+                .filter((u) => u.inspectionStatus === "Pending")
+                .map((u) => u.url)
+              if (pendingUrls.length > 0) pushIndexing({ urls: pendingUrls })
+            }}
+            disabled={
+              isPushing ||
+              isBatchSyncing ||
+              recordCount === 0 ||
+              !urls.some((u) => u.inspectionStatus === "Pending") ||
+              !indexingKey
             }
-            disabled={isPushing || isBatchSyncing || recordCount === 0}
           >
             <Rocket className={cn("size-3.5", isPushing && "animate-pulse")} />
             Push to Index
@@ -519,6 +542,7 @@ export default function InspectionClient() {
         table={table}
         recordCount={recordCount}
         isLoading={isLoading}
+        loadingMode="skeleton"
         tableLayout={{
           dense: true,
           headerBackground: true,

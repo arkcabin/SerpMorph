@@ -119,6 +119,15 @@ export function useInspection(
 
   const pushIndexingMutation = useMutation({
     mutationFn: async ({ url, urls }: { url?: string; urls?: string[] }) => {
+      const urlsToPush = urls || (url ? [url] : [])
+      if (urlsToPush.length === 0)
+        return {
+          successCount: 0,
+          errorCount: 0,
+          results: [],
+          message: "No URLs to index",
+        }
+
       if (!siteId) throw new Error("No site selected")
       const res = await fetch(`/api/sites/${siteId}/indexing/push`, {
         method: "POST",
