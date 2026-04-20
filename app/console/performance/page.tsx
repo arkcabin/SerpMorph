@@ -1,18 +1,13 @@
 import { redirect } from "next/navigation"
 import { getServerAuthSession } from "@/lib/session"
 import { AppShell } from "@/components/app-shell"
-import { SiteDetailClient } from "@/components/site-detail/site-detail-client"
+import { PerformanceClient } from "./performance-client"
 
-export default async function SiteDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+export default async function PerformancePage() {
   const session = await getServerAuthSession()
 
   if (!session?.user) {
-    redirect("/auth/signin?callbackUrl=/dashboard/sites/" + id)
+    redirect("/auth/signin?callbackUrl=/console/performance")
   }
 
   return (
@@ -23,8 +18,7 @@ export default async function SiteDetailPage({
         avatar: session.user.image ?? "",
       }}
     >
-      <SiteDetailClient
-        id={id}
+      <PerformanceClient
         user={{
           name: session.user.name ?? "User",
           email: session.user.email,

@@ -18,7 +18,9 @@ export async function GET(
     const pendingUrls = await prisma.urlAudit.findMany({
       where: {
         siteId: id,
-        inspectionStatus: "Pending",
+        inspectionStatus: {
+          in: ["Pending", "Submitted"],
+        },
       },
       select: {
         url: true,

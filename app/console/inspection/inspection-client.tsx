@@ -26,6 +26,7 @@ import {
   Zap,
   X,
   Check,
+  Info,
 } from "lucide-react"
 
 import {
@@ -35,6 +36,12 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { Button } from "@/components/ui/button"
@@ -48,6 +55,35 @@ import {
   DataGridColumnHeader,
 } from "@/components/reui/data-grid"
 import { cn } from "@/lib/utils"
+
+function getFixSuggestion(state: string | null): string {
+  if (!state) return "Sync status to get more details."
+
+  const s = state.toLowerCase()
+  if (s.includes("unknown")) {
+    return "Google doesn't know this URL exists. Click the 'Push to Index' rocket to introduce it."
+  }
+  if (s.includes("robots.txt")) {
+    return "Your robots.txt file is blocking crawl. Check your server configuration."
+  }
+  if (s.includes("noindex")) {
+    return "The page has a 'noindex' tag. Remove it if you want the page displayed in search."
+  }
+  if (s.includes("crawled") && s.includes("not indexed")) {
+    return "Google found the page but chose not to index it. Improve content quality or uniqueness."
+  }
+  if (s.includes("discovered") && s.includes("not indexed")) {
+    return "Google knows about the page but hasn't had time to crawl it yet. Boost internal linking."
+  }
+  if (s.includes("redirect")) {
+    return "This URL redirects to another page. Ensure you are indexing the final destination."
+  }
+  if (s.includes("not found") || s.includes("404")) {
+    return "Page returned a 404 error. Ensure the URL is correct and the page is live."
+  }
+
+  return "Monitor Search Console for updates or click 'Push to Index' to request a re-crawl."
+}
 
 export default function InspectionClient() {
   const { activeSiteId } = useSite()
@@ -98,19 +134,44 @@ export default function InspectionClient() {
     pushIndexing,
   } = useInspection(activeSiteId, debouncedSearch, pagination.pageIndex)
 
+  // Fetch site details to check GSC connection
+  interface SiteDetails {
+    gscAccountId?: string | null
+  }
+  const [siteDetails, setSiteDetails] = React.useState<SiteDetails | null>(null)
+  React.useEffect(() => {
+    if (!activeSiteId) return
+    fetch(`/api/sites/${activeSiteId}`)
+      .then((res) => res.json())
+      .then((data) => setSiteDetails(data as SiteDetails))
+      .catch(console.error)
+  }, [activeSiteId])
+
   const handleSyncStatus = async () => {
     if (!activeSiteId) return
+
+    // 0. Check GSC connection
+    if (!siteDetails?.gscAccountId) {
+      toast.error("Google Account Not Connected", {
+        description:
+          "Please connect your Google Search Console account in settings to sync statuses.",
+        duration: 5000,
+      })
+      return
+    }
 
     try {
       setIsBatchSyncing(true)
       setSyncProgress({ current: 0, total: 0 })
+      let successCount = 0
+      let failCount = 0
 
       // 1. Get all pending URLs
       const res = await fetch(`/api/sites/${activeSiteId}/inspect/pending`)
-      const { urls: pendingUrls } = await res.json()
+      const { urls: pendingUrls } = (await res.json()) as { urls: string[] }
 
       if (!pendingUrls?.length) {
-        toast.info("No pending URLs to sync.")
+        toast.info("No URLs found to sync.")
         setIsBatchSyncing(false)
         return
       }
@@ -121,19 +182,15 @@ export default function InspectionClient() {
       for (let i = 0; i < pendingUrls.length; i++) {
         if (abortControllerRef.current?.signal.aborted) break
 
-        setSyncProgress((prev) => ({ ...prev, current: i + 1 }))
         const url = pendingUrls[i]
+        setSyncProgress((prev) => ({ ...prev, current: i + 1 }))
 
         try {
           setSyncingUrls((prev) => new Set(prev).add(url))
           await inspectSingle(url)
-          // Await the refetch to ensure UI doesn't flicker back to "Pending"
-          await queryClient.invalidateQueries({
-            queryKey: ["inspection", activeSiteId],
-          })
-          // Small safety delay
-          await new Promise((resolve) => setTimeout(resolve, 500))
-        } catch (err) {
+          successCount++
+        } catch (err: unknown) {
+          failCount++
           console.error(`Failed to sync ${url}:`, err)
         } finally {
           setSyncingUrls((prev) => {
@@ -144,9 +201,20 @@ export default function InspectionClient() {
         }
       }
 
-      toast.success("Synchronization cycle completed.")
+      if (failCount > 0) {
+        toast.warning("Synchronization completed with issues.", {
+          description: `Synced ${successCount} URLs, but ${failCount} failed. Check your GSC permissions or property matching.`,
+        })
+      } else {
+        toast.success(`Successfully synced ${successCount} URLs.`)
+      }
+
+      // Invalidate once at the end
+      await queryClient.invalidateQueries({
+        queryKey: ["inspection", activeSiteId],
+      })
     } catch {
-      toast.error("Failed to start synchronization.")
+      toast.error("Failed to start synchronization cycle.")
     } finally {
       setIsBatchSyncing(false)
       setSyncProgress({ current: 0, total: 0 })
@@ -287,7 +355,7 @@ export default function InspectionClient() {
                     "border-indigo-500/10 bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/10"
                   )}
                 >
-                  <Zap className="mr-1 size-2" />
+                  <Rocket className="mr-1 size-2" />
                   Requested
                 </Badge>
               )
@@ -356,7 +424,51 @@ export default function InspectionClient() {
             )
           }
 
-          return <div className="flex justify-end">{renderBadge()}</div>
+          return (
+            <div className="flex justify-end">
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex cursor-help items-center gap-2.5">
+                      {row.original.coverageState && (
+                        <div className="group/info flex size-4 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary transition-all hover:scale-110 hover:bg-primary hover:text-white">
+                          <Info className="size-2.5" />
+                        </div>
+                      )}
+                      <div className="flex justify-end">{renderBadge()}</div>
+                    </div>
+                  </TooltipTrigger>
+                  {row.original.coverageState && (
+                    <TooltipContent
+                      side="left"
+                      sideOffset={10}
+                      className="animate-in fade-in zoom-in-95 max-w-[280px] border-none bg-white p-3 text-[11px] font-bold text-slate-900 shadow-2xl ring-1 ring-black/5"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="size-1.5 animate-pulse rounded-full bg-primary" />
+                          <span className="tracking-tight uppercase opacity-70">
+                            Reason
+                          </span>
+                        </div>
+                        <p className="text-[12px] leading-relaxed text-slate-700">
+                          {row.original.coverageState}
+                        </p>
+                        <div className="mt-2 rounded-sm bg-primary/5 p-2 text-[10px] leading-normal font-medium text-primary">
+                          <span className="mb-1 block text-[8px] font-black tracking-widest uppercase opacity-70">
+                            How to fix:
+                          </span>
+                          {row.original.inspectionStatus === "Submitted"
+                            ? "Google has received your request. The bot will visit your site shortly (usually within 2-24 hours). Please check back later."
+                            : getFixSuggestion(row.original.coverageState)}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )
         },
         size: 120,
       },
@@ -568,7 +680,7 @@ export default function InspectionClient() {
             placeholder="Filter URLs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 border-border/50 bg-background/50 pl-10 focus-visible:ring-primary/20"
+            className="h-7 border-border/50 pl-10 focus-visible:ring-primary/20"
           />
         </div>
 
@@ -606,6 +718,13 @@ export default function InspectionClient() {
               <RefreshCcw className="size-3.5" />
               Sync Status
             </Button>
+          )}
+
+          {!siteDetails?.gscAccountId && (
+            <div className="flex h-9 items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/5 px-3 text-[10px] font-bold text-red-500 uppercase">
+              <AlertCircle className="size-3" />
+              GSC Disconnected
+            </div>
           )}
 
           <Button

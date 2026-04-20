@@ -4,11 +4,7 @@ import * as React from "react"
 import {
   LayoutDashboard,
   ShieldCheck,
-  Hash,
-  Settings2,
-  Plus,
   BarChart3,
-  Command,
   AudioWaveform,
   Rocket,
 } from "lucide-react"
@@ -17,7 +13,6 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import { ProjectSwitcher } from "@/components/project-switcher"
 import {
   Sidebar,
@@ -116,8 +111,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
-      <SidebarHeader className="gap-0 pb-0">
-        <TeamSwitcher teams={dataSidebar.teams} />
+      <SidebarHeader className="bg-sidebar p-0 pt-4">
+        {/* <TeamSwitcher teams={dataSidebar.teams} /> */}
+        <div className="flex items-center gap-3 px-4 group-data-[collapsible=icon]:px-2">
+          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 p-1 group-data-[collapsible=icon]:size-8">
+            <Image
+              src="/logo-dark.png"
+              alt="Seomo Icon"
+              width={24}
+              height={24}
+              className="block object-contain dark:hidden"
+            />
+            <Image
+              src="/logo-light.png"
+              alt="Seomo Icon"
+              width={24}
+              height={24}
+              className="hidden object-contain dark:block"
+            />
+          </div>
+          <div className="relative flex h-6 w-24 shrink-0 items-center justify-start group-data-[collapsible=icon]:hidden">
+            <Image
+              src="/Seomo-dark.png"
+              alt="Seomo"
+              fill
+              className="block object-contain dark:hidden"
+            />
+            <Image
+              src="/Seomo-light.png"
+              alt="Seomo"
+              fill
+              className="hidden object-contain dark:block"
+            />
+          </div>
+        </div>
         <ProjectSwitcher />
       </SidebarHeader>
       <SidebarContent>

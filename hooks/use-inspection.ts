@@ -5,6 +5,7 @@ export interface UrlAudit {
   id: string
   url: string
   inspectionStatus: string | null
+  coverageState: string | null
   lastCrawlTime: string | null
   isMobileFriendly: boolean | null
   sitemap: string | null

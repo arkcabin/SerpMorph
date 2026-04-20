@@ -132,6 +132,7 @@ model UrlAudit {
   site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
   url              String
   inspectionStatus String?
+  coverageState    String?
   lastCrawlTime    DateTime?
   isMobileFriendly Boolean?
   sitemap          String?
