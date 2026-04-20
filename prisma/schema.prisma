@@ -5,7 +5,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -94,6 +93,7 @@ model Site {
   indexingKeyId String?
   indexingKey   IndexingKey? @relation(fields: [indexingKeyId], references: [id], onDelete: SetNull)
   indexingUsage IndexingUsage[]
+  intelligence  SiteIntelligence?
 
   @@unique([domain, userId])
 }
@@ -164,4 +164,30 @@ model IndexingUsage {
   key       IndexingKey? @relation(fields: [keyId], references: [id], onDelete: SetNull)
 
   @@unique([siteId, date])
+}
+
+model SiteIntelligence {
+  id               String   @id @default(cuid())
+  siteId           String   @unique
+  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  
+  // Authority
+  rank             Float?   // OpenPageRank (0-10)
+  position         Int?     // Global Rank Position
+  
+  // Infrastructure
+  sslStatus        String?  // Valid, Expiring, Invalid
+  sslExpiry        DateTime?
+  ipAddress        String?
+  server           String?
+  
+  // Tech Stack (JSON storage)
+  techStack        Json?    // { frameworks: [], cms: "", clouds: [] }
+  
+  // Discovery
+  domainAge        String?
+  
+  lastSync         DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

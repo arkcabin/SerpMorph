@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppHeader } from "@/components/app-header"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -15,6 +16,28 @@ type AppShellProps = {
 }
 
 export function AppShell({ children, user }: AppShellProps) {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="flex h-svh w-full flex-col overflow-hidden bg-background">
+        <div className="flex h-full w-full">
+          <div className="w-[280px] shrink-0 border-r bg-sidebar/50" />
+          <div className="flex flex-1 flex-col">
+            <div className="m-4 h-14 rounded-xl border-b bg-background/50" />
+            <div className="flex-1 p-6">
+              <div className="h-full w-full animate-pulse rounded-2xl bg-muted/10" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <TooltipProvider>
       <SidebarProvider>

@@ -11,8 +11,12 @@ import {
   SparklesIcon,
   TrendingDownIcon,
   TrendingUpIcon,
-  ChevronDownIcon,
   CheckIcon,
+  ZapIcon,
+  ShieldCheckIcon,
+  CpuIcon,
+  ShieldAlertIcon,
+  ChevronDownIcon,
 } from "lucide-react"
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -50,9 +54,11 @@ import {
   useSiteKeywords,
   useSiteInsights,
   useSiteSync,
+  useSiteIntelligence,
 } from "@/hooks/use-site-data"
 import { useDashboardSummary } from "@/hooks/use-dashboard"
 import { useRouter } from "next/navigation"
+import * as React from "react"
 
 interface SiteDetailClientProps {
   id: string
@@ -71,9 +77,22 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
     useSitePerformance(id)
   const { data: keywords, isLoading: loadingKeywords } = useSiteKeywords(id)
   const { data: insights, isLoading: loadingInsights } = useSiteInsights(id)
+  const { data: qIntel, isLoading: loadingIntel } = useSiteIntelligence(id)
   const { data: summary } = useDashboardSummary()
   const syncMutation = useSiteSync(id)
   const router = useRouter()
+
+  const [sslRenewalDays, setSslRenewalDays] = React.useState(0)
+
+  React.useEffect(() => {
+    if (qIntel?.sslExpiry) {
+      const days = Math.ceil(
+        (new Date(qIntel.sslExpiry).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      )
+      setSslRenewalDays(days)
+    }
+  }, [qIntel?.sslExpiry])
 
   const site = metrics?.site
   const stats = metrics?.stats
@@ -266,41 +285,48 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
       </div>
 
       {/* Top Insight "Command Center" */}
-      <Card className="relative overflow-hidden border-primary/20 bg-primary/5 shadow-inner">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
+      <Card className="group relative overflow-hidden border-primary/20 bg-primary/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all hover:bg-primary/[0.08]">
+        <div className="absolute top-0 right-0 p-4 opacity-10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
           <SparklesIcon className="size-24 text-primary" />
         </div>
-        <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative z-10 flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-xs font-bold tracking-widest text-primary uppercase">
-              <SparklesIcon className="size-3" />
-              Intelligence Pulse
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-50" />
+        <CardContent className="relative z-10 flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-primary uppercase">
+              <div className="size-1.5 animate-pulse rounded-full bg-primary" />
+              Intelligence Hub
             </div>
-            <h2 className="text-lg font-semibold tracking-tight">
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground/90">
               {loadingInsights ? (
                 <Skeleton className="h-6 w-64" />
               ) : (insights?.techHealth.score ?? 0) > 90 ? (
-                "Your site is in peak technical condition. Focus on CTR optimization."
+                "Domain is in peak technical condition."
               ) : (
-                `Action required: You have ${insights?.techHealth.issues.length ?? 0} critical issues impacting your search visibility.`
+                `Action required: ${insights?.techHealth.issues.length ?? 0} critical visibility blockers.`
               )}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <div className="text-sm font-medium text-muted-foreground/80">
               {loadingInsights ? (
                 <Skeleton className="h-4 w-48" />
               ) : (insights?.growth.winners.length ?? 0) > 0 ? (
-                `You have ${insights.growth.winners.length} rising keywords! Expand content for these topics.`
+                `You have ${insights.growth.winners.length} keywords gaining velocity today.`
               ) : (
-                "No significant movement in rankings detected this week."
+                "Technical architecture stable. Monitoring for shifts."
               )}
-            </p>
+            </div>
           </div>
           <Button
             variant="default"
-            className="relative z-10 shadow-lg shadow-primary/20"
+            className="relative shadow-xl shadow-primary/20 transition-transform hover:scale-105 active:scale-95"
+            onClick={() => syncMutation.mutate()}
+            disabled={syncMutation.isPending}
           >
-            View Roadmap
-            <ChevronRightIcon className="ml-2 size-4" />
+            {syncMutation.isPending ? (
+              <RefreshCwIcon className="mr-2 size-4 animate-spin" />
+            ) : (
+              <ZapIcon className="mr-2 size-4" />
+            )}
+            {syncMutation.isPending ? "Orchestrating..." : "Launch Discovery"}
           </Button>
         </CardContent>
       </Card>
@@ -729,6 +755,170 @@ export function SiteDetailClient({ id, user }: SiteDetailClientProps) {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Intelligence Radar Section */}
+      <div className="grid gap-6 md:grid-cols-12">
+        {/* Domain Authority Card */}
+        <Card className="group border-border/50 bg-card/40 backdrop-blur-xl transition-all hover:border-yellow-500/30 md:col-span-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+              <ZapIcon className="size-3 text-yellow-500" />
+              Authority Radar
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loadingIntel ? (
+              <Skeleton className="h-24 w-full" />
+            ) : (
+              <>
+                <div className="relative flex items-baseline gap-2">
+                  <div className="text-5xl font-black tracking-tighter text-foreground drop-shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                    {qIntel?.rank?.toFixed(1) ?? "0.0"}
+                  </div>
+                  <div className="text-[10px] font-bold text-yellow-600/80 uppercase">
+                    PageRank
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[10px] font-bold">
+                    <span className="text-muted-foreground uppercase opacity-70">
+                      Global Position
+                    </span>
+                    <span className="font-mono text-foreground">
+                      #{qIntel?.position?.toLocaleString() ?? "UNCATEGORIZED"}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted/30 p-[1px]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.4)] transition-all duration-1000"
+                      style={{ width: `${(qIntel?.rank ?? 0) * 10}%` }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Technical Blueprint Card */}
+        <Card className="group border-border/50 bg-card/40 backdrop-blur-xl transition-all hover:border-blue-500/30 md:col-span-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+              <CpuIcon className="size-3 text-blue-500" />
+              Site Blueprint
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingIntel ? (
+              <Skeleton className="h-24 w-full" />
+            ) : qIntel?.techStack ? (
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(
+                  qIntel.techStack as Record<string, string[]>
+                ).map(([category, items]) =>
+                  items.map((tech: string) => {
+                    const colors =
+                      category === "frameworks"
+                        ? "text-blue-500 bg-blue-500/10 border-blue-500/20"
+                        : category === "cms"
+                          ? "text-purple-500 bg-purple-500/10 border-purple-500/20"
+                          : category === "clouds"
+                            ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                            : "text-slate-500 bg-slate-500/10 border-slate-500/20"
+
+                    return (
+                      <Badge
+                        key={tech}
+                        variant="outline"
+                        className={cn(
+                          "px-2 py-0.5 text-[9px] font-bold tracking-tight uppercase",
+                          colors
+                        )}
+                      >
+                        {tech}
+                      </Badge>
+                    )
+                  })
+                )}
+                {Object.values(
+                  qIntel.techStack as Record<string, string[]>
+                ).flat().length === 0 && (
+                  <div className="flex w-full flex-col items-center justify-center rounded-lg border border-dashed py-4 opacity-40">
+                    <span className="text-[10px] font-bold uppercase">
+                      Discovery Pending
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex h-24 items-center justify-center rounded-xl border border-dashed bg-muted/5 transition-colors group-hover:bg-primary/5">
+                <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                  Initialization Required
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Security / SSL Card */}
+        <Card className="group border-border/50 bg-card/40 backdrop-blur-xl transition-all hover:border-emerald-500/30 md:col-span-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+              <ShieldCheckIcon className="size-3 text-emerald-500" />
+              Security Perimeter
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {loadingIntel ? (
+              <Skeleton className="h-24 w-full" />
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Certificate Status
+                    </span>
+                    <span className="text-sm font-bold text-foreground/90">
+                      {qIntel?.sslStatus ?? "N/A"}
+                    </span>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex size-10 items-center justify-center rounded-xl transition-all duration-500",
+                      qIntel?.sslStatus === "Valid"
+                        ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        : "bg-rose-500/20 text-rose-500"
+                    )}
+                  >
+                    {qIntel?.sslStatus === "Valid" ? (
+                      <ShieldCheckIcon className="size-5" />
+                    ) : (
+                      <ShieldAlertIcon className="size-5" />
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-bold uppercase opacity-60">
+                    <span>Time to Renewal</span>
+                    <span>{sslRenewalDays} DAYS</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/30">
+                    <div
+                      className={cn(
+                        "h-full transition-all duration-1000",
+                        sslRenewalDays > 30 ? "bg-emerald-500" : "bg-rose-500"
+                      )}
+                      style={{
+                        width: `${Math.min(100, sslRenewalDays / 3.65)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

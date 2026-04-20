@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   ShieldCheck,
   BarChart3,
-  AudioWaveform,
+  Activity,
   Rocket,
 } from "lucide-react"
 
@@ -56,7 +56,7 @@ const dataSidebar = {
     },
     {
       name: "Client Agency",
-      logo: <AudioWaveform />,
+      logo: <Activity />,
       plan: "Agency Plan",
     },
   ],

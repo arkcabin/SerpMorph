@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils"
 function Input({
   className,
   type,
-  size,
   ...props
 }: React.ComponentProps<"input"> & { size?: "sm" | "md" | "lg" }) {
+  const size = props.size || "md"
   const sizeClasses = {
     sm: "h-7 px-2 py-0.5 text-xs",
     md: "h-9 px-3 py-1 text-sm",
